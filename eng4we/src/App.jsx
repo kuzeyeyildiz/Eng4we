@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 function App() {
   const [page, setPage] = useState("home");
   const [isLogged, setIsLogged] = useState(false);
