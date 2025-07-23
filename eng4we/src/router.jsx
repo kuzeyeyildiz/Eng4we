@@ -1,4 +1,3 @@
-// router.jsx
 import {
   createBrowserRouter,
   RouterProvider,
@@ -7,6 +6,7 @@ import {
 import Login from "./pages/Login.jsx";
 import Signup from "./pages/Signup.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import Lessons from "./pages/Lessons.jsx";
 
 const router = createBrowserRouter([
   {
@@ -24,6 +24,10 @@ const router = createBrowserRouter([
   {
     path: "/dashboard",
     element: <Dashboard />,
+  },
+  {
+    path: "/lessons",
+    element: <Lessons />,
   },
 ]);
 
