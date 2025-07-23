@@ -1,4 +1,4 @@
-import Lessons from "./pages/Lessons";
+import Lessons from "./pages/A0";
 
 const App = () => {
   return (

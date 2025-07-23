@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import Lessons from "./pages/Lessons";
+import Lessons from "./pages/A0";
 
 const router = createBrowserRouter([
   {
