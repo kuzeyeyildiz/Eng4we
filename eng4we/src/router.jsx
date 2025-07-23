@@ -1,33 +1,14 @@
-import {
-  createBrowserRouter,
-  RouterProvider,
-  Navigate,
-} from "react-router-dom";
-import Login from "./pages/Login.jsx";
-import Signup from "./pages/Signup.jsx";
-import Dashboard from "./pages/Dashboard.jsx";
-import Lessons from "./pages/Lessons.jsx";
+import { createBrowserRouter, Navigate } from "react-router-dom";
+import Lessons from "./pages/Lessons";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Navigate to="/login" replace />,
-  },
-  {
-    path: "/login",
-    element: <Login />,
-  },
-  {
-    path: "/signup",
-    element: <Signup />,
-  },
-  {
-    path: "/dashboard",
-    element: <Dashboard />,
+    element: <Navigate to="/lessons" replace />,
   },
   {
     path: "/lessons",
-    element: <Lessons />,
+    element: <Lessons />, // simple JSX, no import
   },
 ]);
 
