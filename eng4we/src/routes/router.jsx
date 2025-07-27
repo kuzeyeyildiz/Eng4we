@@ -1,4 +1,4 @@
-//src/routes/router.jsx
+// src/routes/router.jsx
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
@@ -9,23 +9,25 @@ import Streaks from "../pages/Streaks";
 import VolunteerDashboard from "../pages/VolunteerDashboard";
 import { useAuthRole } from "../context/AuthRoleContext";
 
+// Shared loading component
+const LoadingScreen = ({ message = "Loading..." }) => (
+  <div className="flex justify-center items-center h-screen">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+      <p className="text-gray-600">{message}</p>
+    </div>
+  </div>
+);
+
+// Route guard
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuthRole();
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
+  if (loading) return <LoadingScreen />;
   return user ? children : <Navigate to="/login" replace />;
 };
 
+// Redirect based on role
 const RoleBasedRedirect = () => {
   const { user, role, loading } = useAuthRole();
 
@@ -38,36 +40,11 @@ const RoleBasedRedirect = () => {
     loading
   );
 
-  // Show loading while we're still determining authentication/role
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <LoadingScreen />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user && !role)
+    return <LoadingScreen message="Setting up your account..." />;
 
-  // If no user, redirect to login
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // If we have a user but no role yet, show a different loading state
-  if (user && !role) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-          <p className="text-gray-600">Setting up your account...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Redirect based on role
   if (role === "volunteer") {
     console.log("Redirecting to volunteer dashboard");
     return <Navigate to="/volunteer" replace />;
@@ -75,26 +52,19 @@ const RoleBasedRedirect = () => {
     console.log("Redirecting to user dashboard");
     return <Navigate to="/dashboard" replace />;
   } else {
-    // If role is something unexpected, redirect to login
     console.error("Unexpected role:", role);
     return <Navigate to="/login" replace />;
   }
 };
 
+// Main router
 const AppRouter = () => {
-  const { user, loading } = useAuthRole();
-
+  // Remove the loading check here - let individual components handle loading states
   return (
     <Routes>
-      {/* Public Routes - Only accessible when NOT logged in */}
-      <Route
-        path="/login"
-        element={user && !loading ? <Navigate to="/" replace /> : <Login />}
-      />
-      <Route
-        path="/signup"
-        element={user && !loading ? <Navigate to="/" replace /> : <Signup />}
-      />
+      {/* Public Routes */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
 
       {/* Protected Routes */}
       <Route
@@ -122,17 +92,10 @@ const AppRouter = () => {
         }
       />
 
-      {/* Root route - Redirects based on role */}
-      <Route
-        path="/"
-        element={
-          <PrivateRoute>
-            <RoleBasedRedirect />
-          </PrivateRoute>
-        }
-      />
+      {/* Root path: redirects to dashboard based on role */}
+      <Route path="/" element={<RoleBasedRedirect />} />
 
-      {/* Catch all unknown routes */}
+      {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
