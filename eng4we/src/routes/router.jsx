@@ -37,7 +37,7 @@ const RoleBasedRedirect = () => {
     "Role:",
     role,
     "Loading:",
-    loading
+    loading,
   );
 
   if (loading) return <LoadingScreen />;

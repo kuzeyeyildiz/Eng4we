@@ -67,7 +67,7 @@ export const subscribeToLessons = (callback) => {
     (error) => {
       console.error("Error fetching lessons:", error);
       callback([]);
-    }
+    },
   );
 
   return unsubscribe;
@@ -91,7 +91,7 @@ export const subscribeToUserProgress = (uid, callback) => {
     (error) => {
       console.error("Error fetching user progress:", error);
       callback({});
-    }
+    },
   );
 
   return unsubscribe;
@@ -115,7 +115,7 @@ export const subscribeToUserProfile = (uid, callback) => {
     (error) => {
       console.error("Error fetching user profile:", error);
       callback(null);
-    }
+    },
   );
 
   return unsubscribe;
@@ -134,7 +134,7 @@ export const updateProgress = async (uid, lessonId, progressData) => {
         ...progressData,
         updatedAt: new Date(),
       },
-      { merge: true }
+      { merge: true },
     );
   } catch (error) {
     console.error("Error updating progress:", error);
@@ -203,7 +203,7 @@ export const subscribeToUserStats = (userId, callback) => {
   // We'll compute stats from progress data instead of storing separately
   return subscribeToUserProgress(userId, (progressData) => {
     const completedLessons = Object.values(progressData).filter(
-      (p) => p && p.completed
+      (p) => p && p.completed,
     ).length;
 
     const totalXP = Object.values(progressData)
@@ -856,8 +856,8 @@ const FlashcardViewer = ({ flashcards, onComplete }) => {
                 index === currentIndex
                   ? "bg-blue-500"
                   : completedCards.has(index)
-                  ? "bg-green-500"
-                  : "bg-gray-300"
+                    ? "bg-green-500"
+                    : "bg-gray-300"
               }`}
             />
           ))}
@@ -1130,8 +1130,8 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
                 lesson.level === "A0"
                   ? "bg-red-100 text-red-800"
                   : lesson.level === "A1"
-                  ? "bg-yellow-100 text-yellow-800"
-                  : "bg-green-100 text-green-800"
+                    ? "bg-yellow-100 text-yellow-800"
+                    : "bg-green-100 text-green-800"
               }`}
             >
               {lesson.level}
@@ -1204,8 +1204,8 @@ const LessonCard = ({ lesson, progress, onViewLesson }) => {
             lesson.level === "A0"
               ? "bg-red-100 text-red-800"
               : lesson.level === "A1"
-              ? "bg-yellow-100 text-yellow-800"
-              : "bg-green-100 text-green-800"
+                ? "bg-yellow-100 text-yellow-800"
+                : "bg-green-100 text-green-800"
           }`}
         >
           {lesson.level}
@@ -1273,7 +1273,7 @@ const LessonCard = ({ lesson, progress, onViewLesson }) => {
 // Continue Learning Button Component
 const ContinueLearningButton = ({ lessons, userProgress, onViewLesson }) => {
   const nextLesson = lessons.find(
-    (lesson) => !userProgress[lesson.id]?.completed
+    (lesson) => !userProgress[lesson.id]?.completed,
   );
 
   if (!nextLesson) {
@@ -1360,14 +1360,14 @@ const UserLessonsPage = () => {
       user.uid,
       (progressData) => {
         setUserProgress(progressData || {});
-      }
+      },
     );
 
     const unsubscribeProfile = subscribeToUserProfile(
       user.uid,
       (profileData) => {
         setUserProfile(profileData);
-      }
+      },
     );
 
     const unsubscribeStats = subscribeToUserStats(user.uid, (statsData) => {

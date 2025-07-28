@@ -29,7 +29,7 @@ export function AuthRoleProvider({ children }) {
             "Role fetched for user:",
             firebaseUser.uid,
             "->",
-            normalizedRole
+            normalizedRole,
           );
         } catch (err) {
           console.error("Error fetching role:", err);
