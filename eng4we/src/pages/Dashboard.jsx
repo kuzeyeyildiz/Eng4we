@@ -67,7 +67,7 @@ export const subscribeToLessons = (callback) => {
     (error) => {
       console.error("Error fetching lessons:", error);
       callback([]);
-    },
+    }
   );
 
   return unsubscribe;
@@ -91,7 +91,7 @@ export const subscribeToUserProgress = (uid, callback) => {
     (error) => {
       console.error("Error fetching user progress:", error);
       callback({});
-    },
+    }
   );
 
   return unsubscribe;
@@ -115,7 +115,7 @@ export const subscribeToUserProfile = (uid, callback) => {
     (error) => {
       console.error("Error fetching user profile:", error);
       callback(null);
-    },
+    }
   );
 
   return unsubscribe;
@@ -134,7 +134,7 @@ export const updateProgress = async (uid, lessonId, progressData) => {
         ...progressData,
         updatedAt: new Date(),
       },
-      { merge: true },
+      { merge: true }
     );
   } catch (error) {
     console.error("Error updating progress:", error);
@@ -203,7 +203,7 @@ export const subscribeToUserStats = (userId, callback) => {
   // We'll compute stats from progress data instead of storing separately
   return subscribeToUserProgress(userId, (progressData) => {
     const completedLessons = Object.values(progressData).filter(
-      (p) => p && p.completed,
+      (p) => p && p.completed
     ).length;
 
     const totalXP = Object.values(progressData)
@@ -264,11 +264,21 @@ const ProfileEditModal = ({ isOpen, onClose, userProfile, onSave }) => {
     bio: "",
     location: "",
     language: "English",
-    phone: "",
-    dateOfBirth: "",
-    website: "",
+    photoURL: "",
   });
   const [saving, setSaving] = useState(false);
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const photoURL = event.target.result;
+        handleInputChange("photoURL", photoURL);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   useEffect(() => {
     if (userProfile) {
@@ -277,9 +287,7 @@ const ProfileEditModal = ({ isOpen, onClose, userProfile, onSave }) => {
         bio: userProfile.bio || "",
         location: userProfile.location || "",
         language: userProfile.language || "English",
-        phone: userProfile.phone || "",
-        dateOfBirth: userProfile.dateOfBirth || "",
-        website: userProfile.website || "",
+        photoURL: userProfile.photoURL || "",
       });
     }
   }, [userProfile]);
@@ -306,8 +314,8 @@ const ProfileEditModal = ({ isOpen, onClose, userProfile, onSave }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-800">Edit Profile</h2>
@@ -324,19 +332,42 @@ const ProfileEditModal = ({ isOpen, onClose, userProfile, onSave }) => {
           <div className="space-y-6">
             {/* Profile Picture Section */}
             <div className="text-center">
-              <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
-                {formData.displayName?.charAt(0) ||
-                  userProfile?.email?.charAt(0) ||
-                  "U"}
+              <div className="relative inline-block">
+                <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                  {userProfile?.photoURL ? (
+                    <img
+                      src={userProfile.photoURL}
+                      alt="Profile"
+                      className="w-24 h-24 rounded-full object-cover"
+                    />
+                  ) : (
+                    formData.displayName?.charAt(0) ||
+                    userProfile?.email?.charAt(0) ||
+                    "U"
+                  )}
+                </div>
+                <input
+                  type="file"
+                  id="profilePhoto"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="profilePhoto"
+                  className="absolute bottom-0 right-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors"
+                >
+                  <Camera size={16} className="text-white" />
+                </label>
               </div>
-              <button className="flex items-center justify-center mx-auto px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                <Camera size={16} className="mr-2" />
-                Change Photo
-              </button>
+              <p className="text-sm text-gray-500 mt-2">
+                Click camera icon to change photo
+              </p>
             </div>
 
             {/* Form Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Form Fields */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Display Name
@@ -361,19 +392,6 @@ const ProfileEditModal = ({ isOpen, onClose, userProfile, onSave }) => {
                   value={userProfile?.email || ""}
                   disabled
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone
-                </label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Your phone number"
                 />
               </div>
 
@@ -434,19 +452,6 @@ const ProfileEditModal = ({ isOpen, onClose, userProfile, onSave }) => {
                   <option value="Swedish">Swedish</option>
                   <option value="Other">Other</option>
                 </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Website
-                </label>
-                <input
-                  type="url"
-                  value={formData.website}
-                  onChange={(e) => handleInputChange("website", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="https://your-website.com"
-                />
               </div>
 
               <div className="md:col-span-2">
@@ -518,7 +523,7 @@ const Navigation = () => {
           </div>
 
           {/* Navigation Links */}
-          <div className="hidden md:flex items-center space-x-6">
+          <div className="hidden lg:flex items-center space-x-6">
             <a
               href="#"
               className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors"
@@ -856,8 +861,8 @@ const FlashcardViewer = ({ flashcards, onComplete }) => {
                 index === currentIndex
                   ? "bg-blue-500"
                   : completedCards.has(index)
-                    ? "bg-green-500"
-                    : "bg-gray-300"
+                  ? "bg-green-500"
+                  : "bg-gray-300"
               }`}
             />
           ))}
@@ -996,8 +1001,8 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-xl w-full max-w-6xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <div>
@@ -1099,24 +1104,47 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
           )}
 
           {activeTab === "document" && lesson.documentUrl && (
-            <div className="text-center">
-              <div className="bg-gray-50 rounded-xl p-8 mb-4">
-                <FileText size={48} className="mx-auto text-gray-400 mb-4" />
-                <h4 className="text-lg font-medium text-gray-800 mb-2">
-                  {lesson.title} - Worksheet
+            <div className="space-y-4">
+              <div className="bg-gray-50 rounded-xl p-6">
+                <h4 className="text-lg font-medium text-gray-800 mb-4">
+                  {lesson.title} - Document
                 </h4>
-                <p className="text-gray-600 mb-4">
-                  Download the worksheet to practice offline
-                </p>
-                <a
-                  href={lesson.documentUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  <Download size={20} className="mr-2" />
-                  Download PDF
-                </a>
+
+                {/* Enhanced document viewer with multiple fallbacks */}
+                <div className="mb-4">
+                  <DocumentViewer
+                    documentUrl={lesson.documentUrl}
+                    title={lesson.title}
+                    contentType={lesson.contentType}
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <a
+                    href={lesson.documentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  >
+                    <Download size={20} className="mr-2" />
+                    Download/View
+                  </a>
+                  <button
+                    onClick={() => {
+                      // Convert Firebase storage URL to direct access URL if needed
+                      const directUrl = lesson.documentUrl.includes("firebase")
+                        ? lesson.documentUrl
+                            .replace("/o/", "/")
+                            .replace("?", "&")
+                            .replace("alt=media", "")
+                        : lesson.documentUrl;
+                      window.open(directUrl, "_blank");
+                    }}
+                    className="inline-flex items-center justify-center px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                  >
+                    Open Direct Link
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -1130,8 +1158,8 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
                 lesson.level === "A0"
                   ? "bg-red-100 text-red-800"
                   : lesson.level === "A1"
-                    ? "bg-yellow-100 text-yellow-800"
-                    : "bg-green-100 text-green-800"
+                  ? "bg-yellow-100 text-yellow-800"
+                  : "bg-green-100 text-green-800"
               }`}
             >
               {lesson.level}
@@ -1204,8 +1232,8 @@ const LessonCard = ({ lesson, progress, onViewLesson }) => {
             lesson.level === "A0"
               ? "bg-red-100 text-red-800"
               : lesson.level === "A1"
-                ? "bg-yellow-100 text-yellow-800"
-                : "bg-green-100 text-green-800"
+              ? "bg-yellow-100 text-yellow-800"
+              : "bg-green-100 text-green-800"
           }`}
         >
           {lesson.level}
@@ -1273,7 +1301,7 @@ const LessonCard = ({ lesson, progress, onViewLesson }) => {
 // Continue Learning Button Component
 const ContinueLearningButton = ({ lessons, userProgress, onViewLesson }) => {
   const nextLesson = lessons.find(
-    (lesson) => !userProgress[lesson.id]?.completed,
+    (lesson) => !userProgress[lesson.id]?.completed
   );
 
   if (!nextLesson) {
@@ -1360,14 +1388,14 @@ const UserLessonsPage = () => {
       user.uid,
       (progressData) => {
         setUserProgress(progressData || {});
-      },
+      }
     );
 
     const unsubscribeProfile = subscribeToUserProfile(
       user.uid,
       (profileData) => {
         setUserProfile(profileData);
-      },
+      }
     );
 
     const unsubscribeStats = subscribeToUserStats(user.uid, (statsData) => {
@@ -1490,16 +1518,18 @@ const UserLessonsPage = () => {
           />
 
           {/* Enhanced Filter Controls */}
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">All Lessons</h2>
-            <div className="flex space-x-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+              All Lessons
+            </h2>
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
               <select
                 value={filterLevel}
                 onChange={(e) => {
                   setFilterLevel(e.target.value);
                   setFilterModule("all");
                 }}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
               >
                 <option value="all">All Levels</option>
                 <option value="A0">A0 - Absolute Beginner</option>
@@ -1510,7 +1540,7 @@ const UserLessonsPage = () => {
               <select
                 value={filterModule}
                 onChange={(e) => setFilterModule(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
                 disabled={availableModules.length === 0}
               >
                 <option value="all">All Modules</option>
@@ -1524,7 +1554,8 @@ const UserLessonsPage = () => {
           </div>
 
           {/* Lessons Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Lessons Grid - Improved Responsiveness */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
             {filteredLessons.map((lesson) => (
               <LessonCard
                 key={lesson.id}
