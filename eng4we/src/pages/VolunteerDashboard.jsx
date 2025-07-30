@@ -1,5 +1,6 @@
 import React, { useState, useEffect, createContext, useContext } from "react";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+import { ref, uploadBytes, getDownloadURL, getStorage } from "firebase/storage";
 import {
   doc,
   setDoc,
@@ -36,6 +37,7 @@ import {
 // Initialize Firebase services
 const auth = getAuth();
 const db = getFirestore();
+const storage = getStorage();
 
 // Curriculum data structure based on your provided curriculum
 const CURRICULUM_DATA = {
@@ -550,6 +552,41 @@ const TaskModal = ({ isOpen, onClose, task, onSave, isEditing }) => {
   );
 };
 
+const detectContentTypeFromFile = (file) => {
+  if (!file) return "Document";
+
+  const extension = file.name.split(".").pop().toLowerCase();
+  const mimeType = file.type.toLowerCase();
+
+  // Video files
+  if (
+    mimeType.startsWith("video/") ||
+    ["mp4", "avi", "mov", "wmv", "flv"].includes(extension)
+  ) {
+    return "Video";
+  }
+
+  // Audio files
+  if (
+    mimeType.startsWith("audio/") ||
+    ["mp3", "wav", "ogg", "m4a", "aac"].includes(extension)
+  ) {
+    return "Audio";
+  }
+
+  // Document files (default)
+  return "Document";
+};
+
+const validateUrl = (url) => {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 // Content Upload Modal Component
 const ContentUploadModal = ({ isOpen, onClose, onUpload }) => {
   const { showToast, volunteer } = useAppContext();
@@ -589,6 +626,53 @@ const ContentUploadModal = ({ isOpen, onClose, onUpload }) => {
 
   if (!isOpen) return null;
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const detectedType = detectContentTypeFromFile(file);
+      setFormData({
+        ...formData,
+        file: file,
+        contentType: detectedType,
+        // Auto-fill title if empty
+        title: formData.title || file.name.replace(/\.[^/.]+$/, ""),
+      });
+    }
+  };
+
+  const convertToEmbeddableUrl = (url) => {
+    // Validate URL first
+    if (!validateUrl(url)) {
+      throw new Error("Invalid URL provided");
+    }
+
+    // Google Drive: Convert to preview/embed URL
+    if (url.includes("drive.google.com")) {
+      const fileId = url.match(/\/d\/([a-zA-Z0-9-_]+)/)?.[1];
+      return fileId ? `https://drive.google.com/file/d/${fileId}/preview` : url;
+    }
+
+    // YouTube: Convert to embed URL
+    if (url.includes("youtube.com/watch?v=")) {
+      const videoId = url.split("v=")[1]?.split("&")[0];
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+    }
+
+    if (url.includes("youtu.be/")) {
+      const videoId = url.split("youtu.be/")[1]?.split("?")[0];
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+    }
+
+    // Dropbox: Add ?raw=1 for direct access
+    if (url.includes("dropbox.com")) {
+      return url.replace("?dl=0", "?raw=1").replace("?dl=1", "?raw=1");
+    }
+
+    return url; // Return as-is for other URLs
+  };
+
+  // Replace the incomplete handleSubmit function (around line 600-700) with this:
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.title.trim()) {
@@ -607,57 +691,131 @@ const ContentUploadModal = ({ isOpen, onClose, onUpload }) => {
     setUploading(true);
 
     try {
-      // Create lesson data structure compatible with user dashboard
+      let contentUrl = formData.externalUrl;
+      let actualContentType = formData.contentType.toLowerCase();
+
+      // Handle file upload if file is provided
+      if (formData.file) {
+        try {
+          // Determine file type and upload path
+          const fileExtension = formData.file.name
+            .split(".")
+            .pop()
+            .toLowerCase();
+          const timestamp = Date.now();
+          const fileName = `${formData.lessonLevel}_${formData.module}_${formData.unit}_${timestamp}.${fileExtension}`;
+
+          // Determine storage folder based on content type
+          let storageFolder = "documents";
+          if (["mp4", "avi", "mov", "wmv"].includes(fileExtension)) {
+            storageFolder = "videos";
+            actualContentType = "video";
+          } else if (["mp3", "wav", "ogg", "m4a"].includes(fileExtension)) {
+            storageFolder = "audio";
+            actualContentType = "audio";
+          } else if (
+            ["jpg", "jpeg", "png", "gif", "webp"].includes(fileExtension)
+          ) {
+            storageFolder = "images";
+            actualContentType = "document";
+          }
+
+          // Upload to Firebase Storage
+          const storageRef = ref(
+            storage,
+            `lessons/${storageFolder}/${fileName}`
+          );
+          const uploadResult = await uploadBytes(storageRef, formData.file);
+          contentUrl = await getDownloadURL(uploadResult.ref);
+
+          console.log(`File uploaded to: ${contentUrl}`);
+        } catch (uploadError) {
+          console.error("Firebase Storage upload failed:", uploadError);
+
+          // If Firebase fails, fall back to external URL or show error
+          if (formData.externalUrl.trim()) {
+            showToast("File upload failed, using external URL instead", "info");
+            contentUrl = convertToEmbeddableUrl(formData.externalUrl);
+          } else {
+            throw new Error(
+              `File upload failed: ${uploadError.message}. Try providing an external URL instead.`
+            );
+          }
+        }
+      } else if (formData.externalUrl) {
+        // Use external URL and convert to embeddable format
+        contentUrl = convertToEmbeddableUrl(formData.externalUrl);
+
+        // Auto-detect content type from URL
+        if (
+          contentUrl.includes("youtube.com") ||
+          contentUrl.includes("youtu.be")
+        ) {
+          actualContentType = "video";
+        } else if (contentUrl.includes("drive.google.com")) {
+          actualContentType = "document";
+        }
+      }
+
+      // Create the lesson data object - THIS WAS MISSING!
+      const selectedModule = CURRICULUM_DATA[
+        formData.lessonLevel
+      ]?.modules.find((m) => m.id === formData.module);
+      const selectedUnit = selectedModule?.units.find(
+        (u) => u.id === formData.unit
+      );
+
       const lessonData = {
         id: Date.now().toString(),
         title: formData.title,
         description: formData.description,
         level: formData.lessonLevel,
-        module: formData.module,
-        unit: formData.unit,
-        lesson: formData.lesson,
-        type: [formData.contentType.toLowerCase()],
-        contentType: formData.contentType,
-        xpReward: 50, // Default XP reward
-
-        // URL handling based on content type
-        videoUrl:
-          formData.contentType === "Video" ? formData.externalUrl : null,
-        audioUrl:
-          formData.contentType === "Audio" ? formData.externalUrl : null,
-        documentUrl:
-          formData.contentType === "Document" ? formData.externalUrl : null,
-
-        // Add flashcards for flashcard content type
-        flashcards:
-          formData.contentType === "Flashcards"
-            ? [
-                { front: "Sample Question", back: "Sample Answer" },
-                { front: "Hello", back: "Hola" },
-              ]
-            : null,
-
-        // Metadata
-        uploaderId: volunteer?.id || "volunteer1",
+        moduleId: formData.module,
+        moduleName: selectedModule?.name || "",
+        unitId: formData.unit,
+        unitName: selectedUnit?.name || "",
+        targetLesson: formData.lesson || null,
+        contentType: actualContentType,
+        url: contentUrl,
+        uploaderId: volunteer?.id || "unknown",
         uploaderName: volunteer?.name || "Unknown Volunteer",
         uploadedAt: new Date().toISOString(),
-        approved: true, // Auto-approve for now
 
-        // Curriculum structure
-        moduleName: selectedModule?.name,
-        unitName: selectedUnit?.name,
+        // Add metadata for upload method
+        ...(formData.file && {
+          originalFileName: formData.file.name,
+          fileSize: formData.file.size,
+          uploadMethod: "file",
+        }),
+
+        ...(formData.externalUrl &&
+          !formData.file && {
+            uploadMethod: "url",
+            externalSource: true,
+          }),
       };
 
-      // Save to Firestore
+      // Save to Firestore - THIS WAS ALSO MISSING!
       await setDoc(doc(db, "lessons", lessonData.id), lessonData);
 
-      // Also call the parent callback for local state management
+      // Call the onUpload callback
       onUpload(lessonData);
-
-      showToast("Content uploaded and available to students!", "success");
+      showToast("Content uploaded successfully!", "success");
     } catch (error) {
       console.error("Error uploading content:", error);
-      showToast("Error uploading content. Please try again.", "error");
+
+      // Better error handling
+      if (
+        error.message.includes("Firebase") ||
+        error.message.includes("Storage")
+      ) {
+        showToast(
+          "File upload failed. Try using an external URL instead.",
+          "error"
+        );
+      } else {
+        showToast(`Error uploading content: ${error.message}`, "error");
+      }
     } finally {
       setUploading(false);
       resetForm();
@@ -814,7 +972,7 @@ const ContentUploadModal = ({ isOpen, onClose, onUpload }) => {
           {selectedUnit && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Lesson (Optional)
+                Target Lesson
               </label>
               <select
                 value={formData.lesson}
@@ -823,13 +981,46 @@ const ContentUploadModal = ({ isOpen, onClose, onUpload }) => {
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="">Select Lesson (Optional)</option>
+                <option value="">Create as new lesson in unit</option>
                 {selectedUnit.lessons.map((lesson, index) => (
                   <option key={index} value={lesson}>
-                    {lesson}
+                    Target: {lesson}
                   </option>
                 ))}
               </select>
+              <p className="text-xs text-gray-500 mt-1">
+                {formData.lesson
+                  ? `This content will be mapped to "${formData.lesson}" lesson`
+                  : `This will create a new lesson "${formData.title}" in ${selectedUnit.name}`}
+              </p>
+            </div>
+          )}
+
+          {formData.module && formData.unit && (
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <h4 className="font-medium text-blue-900 mb-2">
+                Content Targeting:
+              </h4>
+              <div className="text-sm text-blue-700">
+                <p>
+                  <strong>Level:</strong> {formData.lessonLevel}
+                </p>
+                <p>
+                  <strong>Module:</strong> {selectedModule?.name}
+                </p>
+                <p>
+                  <strong>Unit:</strong> {selectedUnit?.name}
+                </p>
+                {formData.lesson && (
+                  <p>
+                    <strong>Lesson:</strong> {formData.lesson}
+                  </p>
+                )}
+              </div>
+              <p className="text-xs text-blue-600 mt-2">
+                Students will find this content in the curriculum browser under
+                this path
+              </p>
             </div>
           )}
 
@@ -840,20 +1031,19 @@ const ContentUploadModal = ({ isOpen, onClose, onUpload }) => {
               </label>
               <input
                 type="file"
-                onChange={(e) =>
-                  setFormData({ ...formData, file: e.target.files[0] })
-                }
+                onChange={handleFileChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                accept=".pdf,.doc,.docx,.mp4,.jpg,.jpeg,.png,.gif,.json"
+                accept=".pdf,.doc,.docx,.mp4,.avi,.mov,.mp3,.wav,.ogg,.jpg,.jpeg,.png,.gif,.json"
               />
-              <p className="text-sm text-gray-500 mt-1">
-                PDF, DOC, MP4, Images, JSON
+              <p className="text-xs text-orange-600 mt-1">
+                ⚠️ File upload may fail due to Firebase limits
               </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                External URL (Optional)
+                External URL{" "}
+                {!formData.file && <span className="text-red-500">*</span>}
               </label>
               <input
                 type="url"
@@ -862,11 +1052,18 @@ const ContentUploadModal = ({ isOpen, onClose, onUpload }) => {
                   setFormData({ ...formData, externalUrl: e.target.value })
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="https://example.com/resource"
+                placeholder="https://drive.google.com/... (recommended)"
               />
+              <p className="text-xs text-green-600 mt-1">
+                ✅ Always works, embeds nicely
+              </p>
             </div>
           </div>
 
+          <p className="text-sm text-gray-600 text-center">
+            Provide either a file OR an external URL. External URLs are more
+            reliable!
+          </p>
           <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
             <button
               type="button"
@@ -1050,7 +1247,7 @@ const ResourceUploadModal = ({ isOpen, onClose, onUpload }) => {
             </div>
           </div>
 
-          <div>
+          {/*<div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Upload File
             </label>
@@ -1061,7 +1258,7 @@ const ResourceUploadModal = ({ isOpen, onClose, onUpload }) => {
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-          </div>
+          </div>*/}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

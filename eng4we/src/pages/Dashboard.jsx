@@ -51,6 +51,334 @@ import {
 const auth = getAuth();
 const db = getFirestore();
 
+// Curriculum data structure
+const CURRICULUM_DATA = {
+  A0: {
+    modules: [
+      {
+        id: "mod1",
+        name: "English Sounds, Alphabet & Greetings",
+        units: [
+          {
+            id: "unit1",
+            name: "Alphabet & Numbers",
+            lessons: ["Alphabet A–M", "Alphabet N–Z", "Numbers 1–20"],
+          },
+          {
+            id: "unit2",
+            name: "Greetings & Essential Phrases",
+            lessons: [
+              "Greetings & Farewells",
+              "Polite Expressions",
+              "Key Phrases",
+            ],
+          },
+        ],
+      },
+      {
+        id: "mod2",
+        name: "Introducing Yourself & Others",
+        units: [
+          {
+            id: "unit1",
+            name: "Personal Info",
+            lessons: [
+              "My Name / Where I'm From",
+              "Age / Nationality / Occupation",
+              "Simple Questions",
+            ],
+          },
+        ],
+      },
+      {
+        id: "mod3",
+        name: "Everyday Phrases & Survival English",
+        units: [
+          {
+            id: "unit1",
+            name: "Classroom and Public Phrases",
+            lessons: [
+              "I don't understand / Please repeat",
+              "I need / I want",
+              "Giving Simple Instructions",
+            ],
+          },
+        ],
+      },
+      {
+        id: "mod4",
+        name: "Family, Friends & Descriptions",
+        units: [
+          {
+            id: "unit1",
+            name: "Family Vocabulary",
+            lessons: ["Immediate Family", "This is my mother"],
+          },
+          {
+            id: "unit2",
+            name: "Describing People",
+            lessons: ["Appearance", "Personality"],
+          },
+        ],
+      },
+      {
+        id: "mod5",
+        name: "Daily Life & Routines",
+        units: [
+          {
+            id: "unit1",
+            name: "Common Verbs & Time",
+            lessons: ["Daily Actions", "Time & Days"],
+          },
+        ],
+      },
+    ],
+  },
+  A1: {
+    modules: [
+      {
+        id: "mod1",
+        name: "Daily Life & Routines",
+        units: [
+          {
+            id: "unit1",
+            name: "Talking About Your Day",
+            lessons: [
+              "Daily Activities",
+              "Time Expressions",
+              "Talking About School & Home",
+            ],
+          },
+          {
+            id: "unit2",
+            name: "The Clock & Scheduling",
+            lessons: [
+              "Telling the Time",
+              "Asking What time do you",
+              "Expressing Frequency",
+            ],
+          },
+          {
+            id: "unit3",
+            name: "Daily Habits and Routines",
+            lessons: [
+              "Present Simple (affirmative)",
+              "Present Simple (negative)",
+              "Short answers and Yes/No Questions",
+            ],
+          },
+          {
+            id: "unit4",
+            name: "Weekends and Free Time",
+            lessons: [
+              "Weekend Activities",
+              "Talking About Hobbies",
+              "Likes/Dislikes",
+            ],
+          },
+        ],
+      },
+      {
+        id: "mod2",
+        name: "Food and Meals",
+        units: [
+          {
+            id: "unit1",
+            name: "Food Vocabulary",
+            lessons: [
+              "Fruits & Vegetables",
+              "Drinks & Snacks",
+              "Meals of the Day",
+            ],
+          },
+          {
+            id: "unit2",
+            name: "In the Kitchen",
+            lessons: [
+              "Common kitchen verbs",
+              "Cooking utensils and appliances",
+            ],
+          },
+          {
+            id: "unit3",
+            name: "Preferences & Ordering",
+            lessons: ["I'd like / Can I have", "At a restaurant/café"],
+          },
+          {
+            id: "unit4",
+            name: "Countable/Uncountable Nouns",
+            lessons: ["Some / Any / A lot of", "Quantifiers & Containers"],
+          },
+        ],
+      },
+      {
+        id: "mod3",
+        name: "Describing People & Things",
+        units: [
+          {
+            id: "unit1",
+            name: "Physical Appearance",
+            lessons: [
+              "Height, hair, eyes, clothes",
+              "He has / She is structures",
+            ],
+          },
+          {
+            id: "unit2",
+            name: "Personality Traits",
+            lessons: [
+              "Adjectives for personality",
+              "Talking about friends and family",
+            ],
+          },
+          {
+            id: "unit3",
+            name: "Comparing People and Things",
+            lessons: ["-er adjectives + than", "Irregular comparatives"],
+          },
+          {
+            id: "unit4",
+            name: "Talking About Objects",
+            lessons: ["Everyday items", "Describing size, color, material"],
+          },
+        ],
+      },
+    ],
+  },
+  A2: {
+    modules: [
+      {
+        id: "mod1",
+        name: "Talking About the Future and Opinions",
+        units: [
+          {
+            id: "unit1",
+            name: "Talking About the Future",
+            lessons: [
+              "Be going to for plans",
+              "Will for predictions",
+              "Future time expressions",
+            ],
+          },
+          {
+            id: "unit2",
+            name: "Making Arrangements",
+            lessons: [
+              "Invitations and polite refusals",
+              "Suggesting time and place",
+              "Finalizing plans",
+            ],
+          },
+          {
+            id: "unit3",
+            name: "Giving Opinions",
+            lessons: [
+              "Expressing opinions",
+              "Agreeing/disagreeing politely",
+              "Backing opinions with reasons",
+            ],
+          },
+          {
+            id: "unit4",
+            name: "Preferences and Comparisons",
+            lessons: [
+              "Prefer, would rather",
+              "Comparative adjectives",
+              "Explaining preferences",
+            ],
+          },
+        ],
+      },
+      {
+        id: "mod2",
+        name: "Past Experiences and Storytelling",
+        units: [
+          {
+            id: "unit1",
+            name: "Past Tense Forms",
+            lessons: [
+              "Regular/irregular verb review",
+              "Past Simple negatives and questions",
+              "Time expressions",
+            ],
+          },
+          {
+            id: "unit2",
+            name: "Personal Experiences",
+            lessons: [
+              "Have you ever intro",
+              "Describing emotional reactions",
+              "Asking follow-up questions",
+            ],
+          },
+          {
+            id: "unit3",
+            name: "Telling Stories",
+            lessons: [
+              "Sequencing events",
+              "Linking words",
+              "Writing short personal narratives",
+            ],
+          },
+          {
+            id: "unit4",
+            name: "Travel and Cultural Memories",
+            lessons: [
+              "Talking about past trips",
+              "Describing what you saw/did/ate",
+              "Cultural comparisons",
+            ],
+          },
+        ],
+      },
+    ],
+  },
+};
+
+// ADD THIS FUNCTION after the curriculum data (around line 200)
+
+const organizeContentByCurriculum = (lessons) => {
+  const organizedContent = {};
+
+  // Initialize structure for all levels
+  Object.keys(CURRICULUM_DATA).forEach((level) => {
+    organizedContent[level] = {
+      name: `Level ${level}`,
+      modules: CURRICULUM_DATA[level].modules.map((module) => ({
+        ...module,
+        units: module.units.map((unit) => ({
+          ...unit,
+          lessons: unit.lessons.map((lessonName) => {
+            // Find matching lesson from Firebase with more flexible matching
+            const matchingLesson = lessons.find(
+              (lesson) =>
+                lesson.level === level &&
+                lesson.module === module.id &&
+                lesson.unit === unit.id &&
+                (lesson.lesson === lessonName ||
+                  lesson.title === lessonName ||
+                  lesson.title
+                    ?.toLowerCase()
+                    .includes(lessonName.toLowerCase()) ||
+                  lessonName
+                    .toLowerCase()
+                    .includes(lesson.title?.toLowerCase()))
+            );
+
+            return {
+              name: lessonName,
+              content: matchingLesson || null,
+              hasContent: !!matchingLesson,
+            };
+          }),
+        })),
+      })),
+    };
+  });
+
+  return organizedContent;
+};
+
 // Subscribe to lessons collection realtime updates
 export const subscribeToLessons = (callback) => {
   const lessonsCollection = collection(db, "lessons");
@@ -960,6 +1288,96 @@ const AudioPlayer = ({ audioUrl, title }) => {
   );
 };
 
+const DocumentViewer = ({ documentUrl, title, contentType }) => {
+  const [viewerError, setViewerError] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const handleLoad = () => setLoading(false);
+  const handleError = () => {
+    setViewerError(true);
+    setLoading(false);
+  };
+
+  // Fix Firebase URL handling
+  const getDirectUrl = (url) => {
+    if (!url) return "";
+    // If it's already a direct URL, return as is
+    if (url.includes("alt=media")) return url;
+    // If it's a Firebase storage URL, ensure it has the media parameter
+    if (url.includes("firebase") && url.includes("/o/")) {
+      return url.includes("?") ? `${url}&alt=media` : `${url}?alt=media`;
+    }
+    return url;
+  };
+
+  const directUrl = getDirectUrl(documentUrl);
+
+  // Check if it's a PDF
+  const isPDF =
+    contentType === "application/pdf" ||
+    documentUrl?.toLowerCase().includes(".pdf") ||
+    directUrl?.toLowerCase().includes(".pdf");
+
+  // Check if it's an image
+  const isImage =
+    contentType?.startsWith("image/") ||
+    /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(directUrl);
+
+  if (viewerError) {
+    return (
+      <div className="bg-gray-100 rounded-lg p-8 text-center">
+        <FileText size={48} className="mx-auto text-gray-400 mb-4" />
+        <p className="text-gray-600 mb-4">Unable to display document preview</p>
+        <a
+          href={directUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        >
+          <Download size={16} className="mr-2" />
+          Open Document
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
+      )}
+
+      {isPDF ? (
+        <iframe
+          src={directUrl}
+          className="w-full h-96 border rounded-lg"
+          title={title}
+          onLoad={handleLoad}
+          onError={handleError}
+        />
+      ) : isImage ? (
+        <img
+          src={directUrl}
+          alt={title}
+          className="max-w-full h-auto rounded-lg shadow-lg"
+          onLoad={handleLoad}
+          onError={handleError}
+        />
+      ) : (
+        <iframe
+          src={directUrl}
+          className="w-full h-96 border rounded-lg"
+          title={title}
+          onLoad={handleLoad}
+          onError={handleError}
+        />
+      )}
+    </div>
+  );
+};
+
 // Lesson Viewer Modal Component
 const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
   const [activeTab, setActiveTab] = useState("video");
@@ -1024,11 +1442,11 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
         </div>
 
         {/* Content Tabs */}
-        <div className="flex border-b border-gray-200">
-          {lesson.type && lesson.type.includes("video") && (
+        <div className="flex border-b border-gray-200 overflow-x-auto">
+          {(lesson.type?.includes("video") || lesson.videoUrl) && (
             <button
               onClick={() => setActiveTab("video")}
-              className={`px-6 py-3 flex items-center space-x-2 transition-colors ${
+              className={`px-6 py-3 flex items-center space-x-2 transition-colors whitespace-nowrap ${
                 activeTab === "video"
                   ? "border-b-2 border-blue-500 text-blue-600"
                   : "text-gray-600 hover:text-blue-600"
@@ -1038,10 +1456,10 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
               <span>Video</span>
             </button>
           )}
-          {lesson.type && lesson.type.includes("audio") && (
+          {(lesson.type?.includes("audio") || lesson.audioUrl) && (
             <button
               onClick={() => setActiveTab("audio")}
-              className={`px-6 py-3 flex items-center space-x-2 transition-colors ${
+              className={`px-6 py-3 flex items-center space-x-2 transition-colors whitespace-nowrap ${
                 activeTab === "audio"
                   ? "border-b-2 border-blue-500 text-blue-600"
                   : "text-gray-600 hover:text-blue-600"
@@ -1051,10 +1469,10 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
               <span>Audio</span>
             </button>
           )}
-          {lesson.flashcards && (
+          {lesson.flashcards && lesson.flashcards.length > 0 && (
             <button
               onClick={() => setActiveTab("flashcards")}
-              className={`px-6 py-3 flex items-center space-x-2 transition-colors ${
+              className={`px-6 py-3 flex items-center space-x-2 transition-colors whitespace-nowrap ${
                 activeTab === "flashcards"
                   ? "border-b-2 border-blue-500 text-blue-600"
                   : "text-gray-600 hover:text-blue-600"
@@ -1064,10 +1482,10 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
               <span>Flashcards</span>
             </button>
           )}
-          {lesson.type && lesson.type.includes("document") && (
+          {(lesson.type?.includes("document") || lesson.documentUrl) && (
             <button
               onClick={() => setActiveTab("document")}
-              className={`px-6 py-3 flex items-center space-x-2 transition-colors ${
+              className={`px-6 py-3 flex items-center space-x-2 transition-colors whitespace-nowrap ${
                 activeTab === "document"
                   ? "border-b-2 border-blue-500 text-blue-600"
                   : "text-gray-600 hover:text-blue-600"
@@ -1083,12 +1501,36 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
         <div className="p-6 max-h-[calc(90vh-200px)] overflow-y-auto">
           {activeTab === "video" && lesson.videoUrl && (
             <div className="aspect-video">
-              <iframe
-                src={lesson.videoUrl}
-                className="w-full h-full rounded-lg"
-                allowFullScreen
-                title={lesson.title}
-              ></iframe>
+              {lesson.videoUrl.includes("youtube.com") ||
+              lesson.videoUrl.includes("youtu.be") ? (
+                <iframe
+                  src={lesson.videoUrl
+                    .replace("watch?v=", "embed/")
+                    .replace("youtu.be/", "youtube.com/embed/")}
+                  className="w-full h-full rounded-lg"
+                  allowFullScreen
+                  title={lesson.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                ></iframe>
+              ) : lesson.videoUrl.includes("firebase") ? (
+                <video
+                  src={
+                    lesson.videoUrl.includes("alt=media")
+                      ? lesson.videoUrl
+                      : `${lesson.videoUrl}?alt=media`
+                  }
+                  className="w-full h-full rounded-lg"
+                  controls
+                  title={lesson.title}
+                />
+              ) : (
+                <iframe
+                  src={lesson.videoUrl}
+                  className="w-full h-full rounded-lg"
+                  allowFullScreen
+                  title={lesson.title}
+                ></iframe>
+              )}
             </div>
           )}
 
@@ -1121,7 +1563,11 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <a
-                    href={lesson.documentUrl}
+                    href={
+                      lesson.documentUrl.includes("alt=media")
+                        ? lesson.documentUrl
+                        : `${lesson.documentUrl}?alt=media`
+                    }
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
@@ -1129,21 +1575,6 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
                     <Download size={20} className="mr-2" />
                     Download/View
                   </a>
-                  <button
-                    onClick={() => {
-                      // Convert Firebase storage URL to direct access URL if needed
-                      const directUrl = lesson.documentUrl.includes("firebase")
-                        ? lesson.documentUrl
-                            .replace("/o/", "/")
-                            .replace("?", "&")
-                            .replace("alt=media", "")
-                        : lesson.documentUrl;
-                      window.open(directUrl, "_blank");
-                    }}
-                    className="inline-flex items-center justify-center px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-                  >
-                    Open Direct Link
-                  </button>
                 </div>
               </div>
             </div>
@@ -1338,6 +1769,248 @@ const ContinueLearningButton = ({ lessons, userProgress, onViewLesson }) => {
   );
 };
 
+// ADD THIS COMPONENT after the ContinueLearningButton component (around line 900)
+
+const CurriculumBrowser = ({ lessons, userProgress, onViewLesson }) => {
+  const [selectedLevel, setSelectedLevel] = useState("A0");
+  const [selectedModule, setSelectedModule] = useState(null);
+  const [selectedUnit, setSelectedUnit] = useState(null);
+
+  const organizedContent = organizeContentByCurriculum(lessons);
+
+  const currentLevel = organizedContent[selectedLevel];
+  const currentModule = selectedModule
+    ? currentLevel.modules.find((m) => m.id === selectedModule)
+    : null;
+  const currentUnit =
+    selectedUnit && currentModule
+      ? currentModule.units.find((u) => u.id === selectedUnit)
+      : null;
+
+  const getLessonProgress = (lesson) => {
+    if (!lesson.content) {
+      // Try to find lesson by alternative matching
+      const alternativeMatch = lessons.find(
+        (l) =>
+          l.level === selectedLevel &&
+          (l.title?.toLowerCase().includes(lesson.name.toLowerCase()) ||
+            lesson.name.toLowerCase().includes(l.title?.toLowerCase()) ||
+            l.lesson === lesson.name)
+      );
+
+      if (alternativeMatch) {
+        lesson.content = alternativeMatch; // Update the lesson object
+        lesson.hasContent = true;
+      } else {
+        return "unavailable";
+      }
+    }
+
+    const progress = userProgress[lesson.content.id];
+    if (progress?.completed) return "completed";
+    if (progress?.started) return "started";
+    return "available";
+  };
+
+  const getProgressColor = (status) => {
+    switch (status) {
+      case "completed":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "started":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "available":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "unavailable":
+        return "bg-gray-100 text-gray-500 border-gray-200";
+      default:
+        return "bg-gray-100 text-gray-500 border-gray-200";
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">
+        Browse by Curriculum
+      </h2>
+
+      {/* Level Selection */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {Object.keys(CURRICULUM_DATA).map((level) => (
+          <button
+            key={level}
+            onClick={() => {
+              setSelectedLevel(level);
+              setSelectedModule(null);
+              setSelectedUnit(null);
+            }}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              selectedLevel === level
+                ? "bg-blue-500 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Level {level}
+          </button>
+        ))}
+      </div>
+
+      {/* Breadcrumb Navigation */}
+      <div className="flex items-center space-x-2 text-sm text-gray-600 mb-4">
+        <span>Level {selectedLevel}</span>
+        {currentModule && (
+          <>
+            <span>→</span>
+            <span>{currentModule.name}</span>
+          </>
+        )}
+        {currentUnit && (
+          <>
+            <span>→</span>
+            <span>{currentUnit.name}</span>
+          </>
+        )}
+      </div>
+
+      {/* Content Display */}
+      {!selectedModule ? (
+        // Module Selection
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {currentLevel.modules.map((module) => {
+            const totalLessons = module.units.reduce(
+              (acc, unit) => acc + unit.lessons.length,
+              0
+            );
+            const completedLessons = module.units.reduce(
+              (acc, unit) =>
+                acc +
+                unit.lessons.filter(
+                  (lesson) => getLessonProgress(lesson) === "completed"
+                ).length,
+              0
+            );
+
+            return (
+              <div
+                key={module.id}
+                onClick={() => setSelectedModule(module.id)}
+                className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-md transition-all cursor-pointer"
+              >
+                <h3 className="font-bold text-gray-800 mb-2">{module.name}</h3>
+                <p className="text-sm text-gray-600 mb-3">
+                  {module.units.length} units
+                </p>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500">
+                    {completedLessons}/{totalLessons} lessons completed
+                  </span>
+                  <div className="w-16 bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-500 h-2 rounded-full transition-all"
+                      style={{
+                        width: `${
+                          totalLessons > 0
+                            ? (completedLessons / totalLessons) * 100
+                            : 0
+                        }%`,
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : !selectedUnit ? (
+        // Unit Selection
+        <div>
+          <button
+            onClick={() => setSelectedModule(null)}
+            className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
+          >
+            <ArrowLeft size={16} className="mr-1" />
+            Back to Modules
+          </button>
+          <div className="grid grid-cols-1 gap-4">
+            {currentModule.units.map((unit) => {
+              const completedLessons = unit.lessons.filter(
+                (lesson) => getLessonProgress(lesson) === "completed"
+              ).length;
+
+              return (
+                <div
+                  key={unit.id}
+                  onClick={() => setSelectedUnit(unit.id)}
+                  className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-md transition-all cursor-pointer"
+                >
+                  <h4 className="font-bold text-gray-800 mb-2">{unit.name}</h4>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">
+                      {unit.lessons.length} lessons
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {completedLessons}/{unit.lessons.length} completed
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        // Lesson Selection
+        <div>
+          <button
+            onClick={() => setSelectedUnit(null)}
+            className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
+          >
+            <ArrowLeft size={16} className="mr-1" />
+            Back to Units
+          </button>
+          <div className="grid grid-cols-1 gap-3">
+            {currentUnit.lessons.map((lesson, index) => {
+              const status = getLessonProgress(lesson);
+              const isClickable = lesson.hasContent;
+
+              return (
+                <div
+                  key={index}
+                  onClick={() => isClickable && onViewLesson(lesson.content)}
+                  className={`p-4 border rounded-lg transition-all ${
+                    isClickable
+                      ? "cursor-pointer hover:shadow-md"
+                      : "cursor-not-allowed opacity-75"
+                  } ${getProgressColor(status)}`}
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h5 className="font-medium">{lesson.name}</h5>
+                      {lesson.content && (
+                        <p className="text-sm mt-1 opacity-75">
+                          {lesson.content.description}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {status === "completed" && <CheckCircle size={16} />}
+                      {status === "started" && <Clock size={16} />}
+                      {status === "unavailable" && (
+                        <span className="text-xs px-2 py-1 bg-gray-200 rounded">
+                          Coming Soon
+                        </span>
+                      )}
+                      {isClickable && <ArrowRight size={16} />}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Main App Component
 const UserLessonsPage = () => {
   const [lessons, setLessons] = useState([]);
@@ -1517,10 +2190,16 @@ const UserLessonsPage = () => {
             onViewLesson={handleViewLesson}
           />
 
+          <CurriculumBrowser
+            lessons={lessons}
+            userProgress={userProgress}
+            onViewLesson={handleViewLesson}
+          />
+
           {/* Enhanced Filter Controls */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-              All Lessons
+              All Lessons ({filteredLessons.length})
             </h2>
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
               <select
