@@ -765,23 +765,43 @@ const ContentUploadModal = ({ isOpen, onClose, onUpload }) => {
         (u) => u.id === formData.unit
       );
 
+      // REPLACE the lessonData object creation in ContentUploadModal handleSubmit (around line 700) with this:
+
       const lessonData = {
         id: Date.now().toString(),
         title: formData.title,
         description: formData.description,
         level: formData.lessonLevel,
-        moduleId: formData.module,
+
+        // NEW CONSISTENT FIELD MAPPING
+        moduleId: formData.module, // Primary field for new system
+        module: formData.module, // Legacy field for backward compatibility
         moduleName: selectedModule?.name || "",
-        unitId: formData.unit,
+
+        unitId: formData.unit, // Primary field for new system
+        unit: formData.unit, // Legacy field for backward compatibility
         unitName: selectedUnit?.name || "",
-        targetLesson: formData.lesson || null,
+
+        targetLesson: formData.lesson || null, // Primary field for curriculum mapping
+        lesson: formData.lesson || null, // Legacy field for backward compatibility
+
+        // ENHANCED CONTENT TYPE AND URL MAPPING
         contentType: actualContentType,
-        url: contentUrl,
+        type: actualContentType, // Legacy field
+
+        // URL MAPPING - store in multiple fields for compatibility
+        url: contentUrl, // Primary URL field
+        ...(actualContentType === "video" && { videoUrl: contentUrl }),
+        ...(actualContentType === "audio" && { audioUrl: contentUrl }),
+        ...(actualContentType === "document" && { documentUrl: contentUrl }),
+
+        // METADATA
         uploaderId: volunteer?.id || "unknown",
         uploaderName: volunteer?.name || "Unknown Volunteer",
         uploadedAt: new Date().toISOString(),
+        xpReward: 10, // Default XP reward
 
-        // Add metadata for upload method
+        // UPLOAD METHOD TRACKING
         ...(formData.file && {
           originalFileName: formData.file.name,
           fileSize: formData.file.size,
@@ -792,6 +812,7 @@ const ContentUploadModal = ({ isOpen, onClose, onUpload }) => {
           !formData.file && {
             uploadMethod: "url",
             externalSource: true,
+            originalUrl: formData.externalUrl, // Store original URL for reference
           }),
       };
 
