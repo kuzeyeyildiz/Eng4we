@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+} from "react";
 import {
   Play,
   Volume2,
@@ -1569,14 +1575,33 @@ const getEmbeddableUrl = (originalUrl, contentType) => {
   return originalUrl;
 };
 
-// Lesson Viewer Modal Component
+// Lesson Viewer Modal Component - DYNAMIC VIDEO SIZING
 const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
+  // ALL HOOKS MUST BE CALLED FIRST, BEFORE ANY CONDITIONAL RETURNS
   const [activeTab, setActiveTab] = useState("video");
   const [lessonCompleted, setLessonCompleted] = useState(false);
+  const [availableHeight, setAvailableHeight] = useState(0);
   const { user } = useAppContext();
+  const contentRef = React.useRef(null);
 
-  // REPLACE the useEffect for tab detection in LessonViewer (around line 800) with this:
+  // useEffect for calculating available height
+  useEffect(() => {
+    const calculateHeight = () => {
+      if (contentRef.current && activeTab === "video") {
+        const contentRect = contentRef.current.getBoundingClientRect();
+        setAvailableHeight(contentRect.height - 32); // Subtract padding
+      }
+    };
 
+    if (isOpen && activeTab === "video") {
+      // Small delay to ensure DOM is rendered
+      setTimeout(calculateHeight, 100);
+      window.addEventListener("resize", calculateHeight);
+      return () => window.removeEventListener("resize", calculateHeight);
+    }
+  }, [isOpen, activeTab]);
+
+  // useEffect for tab detection
   useEffect(() => {
     if (lesson) {
       // Enhanced tab detection based on available content
@@ -1618,6 +1643,18 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
     }
   }, [lesson]);
 
+  // useEffect for preventing background scrolling
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent background scrolling when modal is open
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "unset";
+      };
+    }
+  }, [isOpen]);
+
+  // CONDITIONAL RETURN AFTER ALL HOOKS
   if (!isOpen || !lesson) return null;
 
   const handleComplete = async () => {
@@ -1638,11 +1675,36 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
     handleComplete();
   };
 
+  // Calculate video dimensions that fit within available space
+  const getVideoStyle = () => {
+    if (!availableHeight || activeTab !== "video") return {};
+
+    const aspectRatio = 16 / 9;
+    const maxWidth =
+      contentRef.current?.getBoundingClientRect().width - 64 || 800; // Subtract padding
+
+    // Calculate dimensions based on available space
+    let width = maxWidth;
+    let height = width / aspectRatio;
+
+    // If height exceeds available space, constrain by height
+    if (height > availableHeight) {
+      height = availableHeight;
+      width = height * aspectRatio;
+    }
+
+    return {
+      width: `${width}px`,
+      height: `${height}px`,
+      maxWidth: "100%",
+    };
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-      <div className="bg-white rounded-xl w-full max-w-6xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4 overflow-hidden">
+      <div className="bg-white rounded-xl w-full max-w-7xl h-[95vh] sm:h-[90vh] overflow-hidden shadow-2xl flex flex-col">
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
+        <div className="flex justify-between items-center p-6 border-b border-gray-200 flex-shrink-0">
           <div>
             <h2 className="text-2xl font-bold text-gray-800">{lesson.title}</h2>
             <p className="text-gray-600">{lesson.description}</p>
@@ -1662,210 +1724,230 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
         </div>
 
         {/* Content Tabs with Enhanced Detection */}
-        <div className="flex border-b border-gray-200 overflow-x-auto">
-          {(() => {
-            const tabs = [];
+        <div className="flex border-b border-gray-200 overflow-x-auto scrollbar-hide flex-shrink-0">
+          <div className="flex min-w-full">
+            {(() => {
+              const tabs = [];
 
-            // Video tab
-            const hasVideo =
-              lesson.videoUrl ||
-              (lesson.url &&
-                (lesson.contentType === "video" ||
-                  lesson.type?.includes("video") ||
-                  lesson.url.includes("youtube") ||
-                  lesson.url.includes("drive.google.com")));
+              // Video tab
+              const hasVideo =
+                lesson.videoUrl ||
+                (lesson.url &&
+                  (lesson.contentType === "video" ||
+                    lesson.type?.includes("video") ||
+                    lesson.url.includes("youtube") ||
+                    lesson.url.includes("drive.google.com")));
 
-            if (hasVideo) {
-              tabs.push(
-                <button
-                  key="video"
-                  onClick={() => setActiveTab("video")}
-                  className={`px-6 py-3 flex items-center space-x-2 transition-colors whitespace-nowrap ${
-                    activeTab === "video"
-                      ? "border-b-2 border-blue-500 text-blue-600"
-                      : "text-gray-600 hover:text-blue-600"
-                  }`}
-                >
-                  <Video size={20} />
-                  <span>Video</span>
-                </button>
-              );
-            }
+              if (hasVideo) {
+                tabs.push(
+                  <button
+                    key="video"
+                    onClick={() => setActiveTab("video")}
+                    className={`px-6 py-3 flex items-center space-x-2 transition-colors whitespace-nowrap ${
+                      activeTab === "video"
+                        ? "border-b-2 border-blue-500 text-blue-600"
+                        : "text-gray-600 hover:text-blue-600"
+                    }`}
+                  >
+                    <Video size={20} />
+                    <span>Video</span>
+                  </button>
+                );
+              }
 
-            // Audio tab
-            const hasAudio =
-              lesson.audioUrl ||
-              (lesson.url &&
-                (lesson.contentType === "audio" ||
-                  lesson.type?.includes("audio")));
+              // Audio tab
+              const hasAudio =
+                lesson.audioUrl ||
+                (lesson.url &&
+                  (lesson.contentType === "audio" ||
+                    lesson.type?.includes("audio")));
 
-            if (hasAudio) {
-              tabs.push(
-                <button
-                  key="audio"
-                  onClick={() => setActiveTab("audio")}
-                  className={`px-6 py-3 flex items-center space-x-2 transition-colors whitespace-nowrap ${
-                    activeTab === "audio"
-                      ? "border-b-2 border-blue-500 text-blue-600"
-                      : "text-gray-600 hover:text-blue-600"
-                  }`}
-                >
-                  <Volume2 size={20} />
-                  <span>Audio</span>
-                </button>
-              );
-            }
+              if (hasAudio) {
+                tabs.push(
+                  <button
+                    key="audio"
+                    onClick={() => setActiveTab("audio")}
+                    className={`px-6 py-3 flex items-center space-x-2 transition-colors whitespace-nowrap ${
+                      activeTab === "audio"
+                        ? "border-b-2 border-blue-500 text-blue-600"
+                        : "text-gray-600 hover:text-blue-600"
+                    }`}
+                  >
+                    <Volume2 size={20} />
+                    <span>Audio</span>
+                  </button>
+                );
+              }
 
-            // Flashcards tab
-            if (lesson.flashcards && lesson.flashcards.length > 0) {
-              tabs.push(
-                <button
-                  key="flashcards"
-                  onClick={() => setActiveTab("flashcards")}
-                  className={`px-6 py-3 flex items-center space-x-2 transition-colors whitespace-nowrap ${
-                    activeTab === "flashcards"
-                      ? "border-b-2 border-blue-500 text-blue-600"
-                      : "text-gray-600 hover:text-blue-600"
-                  }`}
-                >
-                  <BookOpen size={20} />
-                  <span>Flashcards</span>
-                </button>
-              );
-            }
+              // Flashcards tab
+              if (lesson.flashcards && lesson.flashcards.length > 0) {
+                tabs.push(
+                  <button
+                    key="flashcards"
+                    onClick={() => setActiveTab("flashcards")}
+                    className={`px-6 py-3 flex items-center space-x-2 transition-colors whitespace-nowrap ${
+                      activeTab === "flashcards"
+                        ? "border-b-2 border-blue-500 text-blue-600"
+                        : "text-gray-600 hover:text-blue-600"
+                    }`}
+                  >
+                    <BookOpen size={20} />
+                    <span>Flashcards</span>
+                  </button>
+                );
+              }
 
-            // Document tab
-            const hasDocument =
-              lesson.documentUrl ||
-              lesson.url ||
-              lesson.contentType === "document" ||
-              lesson.type?.includes("document") ||
-              (!hasVideo && !hasAudio); // Show if no other content
+              // Document tab
+              const hasDocument =
+                lesson.documentUrl ||
+                lesson.url ||
+                lesson.contentType === "document" ||
+                lesson.type?.includes("document") ||
+                (!hasVideo && !hasAudio); // Show if no other content
 
-            if (hasDocument) {
-              tabs.push(
-                <button
-                  key="document"
-                  onClick={() => setActiveTab("document")}
-                  className={`px-6 py-3 flex items-center space-x-2 transition-colors whitespace-nowrap ${
-                    activeTab === "document"
-                      ? "border-b-2 border-blue-500 text-blue-600"
-                      : "text-gray-600 hover:text-blue-600"
-                  }`}
-                >
-                  <FileText size={20} />
-                  <span>Document</span>
-                </button>
-              );
-            }
+              if (hasDocument) {
+                tabs.push(
+                  <button
+                    key="document"
+                    onClick={() => setActiveTab("document")}
+                    className={`px-6 py-3 flex items-center space-x-2 transition-colors whitespace-nowrap ${
+                      activeTab === "document"
+                        ? "border-b-2 border-blue-500 text-blue-600"
+                        : "text-gray-600 hover:text-blue-600"
+                    }`}
+                  >
+                    <FileText size={20} />
+                    <span>Document</span>
+                  </button>
+                );
+              }
 
-            return tabs;
-          })()}
+              return tabs;
+            })()}
+          </div>
         </div>
 
-        {/* Content Area */}
-        <div className="p-6 max-h-[calc(90vh-200px)] overflow-y-auto">
+        {/* Content Area - DYNAMICALLY SIZED */}
+        <div ref={contentRef} className="flex-1 overflow-y-auto">
           {activeTab === "video" && (lesson.videoUrl || lesson.url) && (
-            <div className="aspect-video">
-              {(() => {
-                const videoUrl = getEmbeddableUrl(
-                  lesson.videoUrl || lesson.url,
-                  lesson.contentType
-                );
+            <div className="flex items-center justify-center w-full h-full p-4 lg:p-6 xl:p-8">
+              <div
+                style={getVideoStyle()}
+                className="rounded-lg overflow-hidden"
+              >
+                {(() => {
+                  const videoUrl = getEmbeddableUrl(
+                    lesson.videoUrl || lesson.url,
+                    lesson.contentType
+                  );
 
-                if (
-                  videoUrl.includes("youtube.com") ||
-                  videoUrl.includes("youtu.be")
-                ) {
-                  return (
-                    <iframe
-                      src={videoUrl}
-                      className="w-full h-full rounded-lg"
-                      allowFullScreen
-                      title={lesson.title}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    />
-                  );
-                } else if (videoUrl.includes("drive.google.com")) {
-                  return (
-                    <iframe
-                      src={videoUrl}
-                      className="w-full h-full rounded-lg"
-                      allowFullScreen
-                      title={lesson.title}
-                      allow="autoplay"
-                    />
-                  );
-                } else if (videoUrl.includes("firebase")) {
-                  return (
-                    <video
-                      src={videoUrl}
-                      className="w-full h-full rounded-lg"
-                      controls
-                      title={lesson.title}
-                    />
-                  );
-                } else {
-                  return (
-                    <iframe
-                      src={videoUrl}
-                      className="w-full h-full rounded-lg"
-                      allowFullScreen
-                      title={lesson.title}
-                    />
-                  );
-                }
-              })()}
+                  if (
+                    videoUrl.includes("youtube.com") ||
+                    videoUrl.includes("youtu.be")
+                  ) {
+                    return (
+                      <iframe
+                        src={videoUrl}
+                        className="w-full h-full rounded-lg"
+                        allowFullScreen
+                        title={lesson.title}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      />
+                    );
+                  } else if (videoUrl.includes("drive.google.com")) {
+                    return (
+                      <iframe
+                        src={videoUrl}
+                        className="w-full h-full rounded-lg"
+                        allowFullScreen
+                        title={lesson.title}
+                        allow="autoplay"
+                      />
+                    );
+                  } else if (videoUrl.includes("firebase")) {
+                    return (
+                      <video
+                        src={videoUrl}
+                        className="w-full h-full rounded-lg"
+                        controls
+                        title={lesson.title}
+                      />
+                    );
+                  } else {
+                    return (
+                      <iframe
+                        src={videoUrl}
+                        className="w-full h-full rounded-lg"
+                        allowFullScreen
+                        title={lesson.title}
+                      />
+                    );
+                  }
+                })()}
+              </div>
             </div>
           )}
-          {activeTab === "audio" && lesson.audioUrl && (
-            <AudioPlayer audioUrl={lesson.audioUrl} title={lesson.title} />
-          )}
-          {activeTab === "flashcards" && lesson.flashcards && (
-            <FlashcardViewer
-              flashcards={lesson.flashcards}
-              onComplete={handleFlashcardsComplete}
-            />
-          )}
-          {activeTab === "document" && (lesson.documentUrl || lesson.url) && (
-            <div className="space-y-4">
-              <div className="bg-gray-50 rounded-xl p-6">
-                <h4 className="text-lg font-medium text-gray-800 mb-4">
-                  {lesson.title} - Document
-                </h4>
 
-                <div className="mb-4">
-                  <DocumentViewer
-                    documentUrl={getEmbeddableUrl(
-                      lesson.documentUrl || lesson.url,
-                      lesson.contentType
-                    )}
+          {activeTab !== "video" && (
+            <div className="p-4 lg:p-6 xl:p-8">
+              {activeTab === "audio" && lesson.audioUrl && (
+                <div className="max-w-2xl mx-auto">
+                  <AudioPlayer
+                    audioUrl={lesson.audioUrl}
                     title={lesson.title}
-                    contentType={lesson.contentType}
                   />
                 </div>
+              )}
 
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <a
-                    href={getEmbeddableUrl(
-                      lesson.documentUrl || lesson.url,
-                      lesson.contentType
-                    )}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                  >
-                    <Download size={20} className="mr-2" />
-                    Download/View
-                  </a>
+              {activeTab === "flashcards" && lesson.flashcards && (
+                <div className="max-w-4xl mx-auto">
+                  <FlashcardViewer
+                    flashcards={lesson.flashcards}
+                    onComplete={handleFlashcardsComplete}
+                  />
                 </div>
-              </div>
+              )}
+
+              {activeTab === "document" &&
+                (lesson.documentUrl || lesson.url) && (
+                  <div className="space-y-4">
+                    <div className="bg-gray-50 rounded-xl p-4 lg:p-6">
+                      <h4 className="text-lg font-medium text-gray-800 mb-3 lg:mb-4">
+                        {lesson.title} - Document
+                      </h4>
+                      <div className="mb-4">
+                        <DocumentViewer
+                          documentUrl={getEmbeddableUrl(
+                            lesson.documentUrl || lesson.url,
+                            lesson.contentType
+                          )}
+                          title={lesson.title}
+                          contentType={lesson.contentType}
+                        />
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center mt-4">
+                        <a
+                          href={getEmbeddableUrl(
+                            lesson.documentUrl || lesson.url,
+                            lesson.contentType
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                        >
+                          <Download size={20} className="mr-2" />
+                          Download/View
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 flex justify-between items-center p-6 border-t border-gray-200 bg-gray-50">
+        <div className="flex-shrink-0 flex justify-between items-center p-4 lg:p-6 border-t border-gray-200 bg-gray-50">
           <div className="flex items-center space-x-4">
             <span
               className={`px-3 py-1 rounded-full text-sm ${
@@ -1960,8 +2042,6 @@ const LessonCard = ({ lesson, progress, onViewLesson }) => {
       </div>
       <h3 className="text-xl font-bold text-gray-800 mb-2">{lesson.title}</h3>
       <p className="text-gray-600 mb-4 line-clamp-2">{lesson.description}</p>
-      // REPLACE the content type detection section in LessonCard (around line
-      1050) with this:
       <div className="flex items-center space-x-3 mb-4">
         {(() => {
           const contentTypes = [];

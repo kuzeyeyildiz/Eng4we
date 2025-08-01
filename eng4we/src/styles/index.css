@@ -2,8 +2,5 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Basic global styles */
-body {
-  font-family: "Inter", sans-serif; /* Or any other clean sans-serif font */
-  @apply text-gray-800 bg-gray-50;
+@layer utilities {
 }
