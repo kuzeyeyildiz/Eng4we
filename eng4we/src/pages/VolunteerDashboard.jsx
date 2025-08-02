@@ -1,4 +1,10 @@
-import React, { useState, useEffect, createContext, useContext } from "react";
+import React, {
+  useState,
+  useEffect,
+  createContext,
+  useContext,
+  useRef,
+} from "react";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import { ref, uploadBytes, getDownloadURL, getStorage } from "firebase/storage";
 import {
@@ -2309,7 +2315,7 @@ const ContentUpload = () => {
   );
 };
 
-// Fixed Messaging Component with proper error handling
+// Fixed Messaging Component with auto-scroll functionality
 const Messaging = () => {
   const { volunteer, showToast } = useAppContext();
   const [messages, setMessages] = useState([]);
@@ -2317,6 +2323,20 @@ const Messaging = () => {
   const [loading, setLoading] = useState(true);
   const [editingMessage, setEditingMessage] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+
+  // Ref for the messages container to enable auto-scroll
+  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+
+  // Auto-scroll to bottom function
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Auto-scroll when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   // Fixed useEffect with proper error handling
   useEffect(() => {
@@ -2387,6 +2407,8 @@ const Messaging = () => {
 
       await setDoc(doc(db, "volunteerMessages", message.id), message);
       setNewMessage("");
+      // Scroll to bottom after sending message
+      setTimeout(scrollToBottom, 100);
     } catch (error) {
       console.error("Error sending message:", error);
       if (error.code === "permission-denied") {
@@ -2475,7 +2497,10 @@ const Messaging = () => {
           </div>
         )}
 
-        <div className="h-48 sm:h-64 overflow-y-auto border border-gray-200 rounded-lg p-4 mb-4 space-y-3">
+        <div
+          ref={messagesContainerRef}
+          className="h-48 sm:h-64 overflow-y-auto border border-gray-200 rounded-lg p-4 mb-4 space-y-3"
+        >
           {messages.length === 0 ? (
             <p className="text-gray-500 text-center">
               No messages yet. Start the conversation!
@@ -2539,6 +2564,8 @@ const Messaging = () => {
               </div>
             ))
           )}
+          {/* Invisible element to scroll to */}
+          <div ref={messagesEndRef} />
         </div>
 
         <form onSubmit={sendMessage} className="flex space-x-3">
