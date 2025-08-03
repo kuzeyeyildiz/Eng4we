@@ -1,5 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+} from "react";
 import {
   Play,
   Volume2,
@@ -50,6 +55,387 @@ import {
 // Initialize Firebase services
 const auth = getAuth();
 const db = getFirestore();
+
+// Curriculum data structure
+const CURRICULUM_DATA = {
+  A0: {
+    modules: [
+      {
+        id: "mod1",
+        name: "English Sounds, Alphabet & Greetings",
+        units: [
+          {
+            id: "unit1",
+            name: "Alphabet & Numbers",
+            lessons: ["Alphabet A–M", "Alphabet N–Z", "Numbers 1–20"],
+          },
+          {
+            id: "unit2",
+            name: "Greetings & Essential Phrases",
+            lessons: [
+              "Greetings & Farewells",
+              "Polite Expressions",
+              "Key Phrases",
+            ],
+          },
+        ],
+      },
+      {
+        id: "mod2",
+        name: "Introducing Yourself & Others",
+        units: [
+          {
+            id: "unit1",
+            name: "Personal Info",
+            lessons: [
+              "My Name / Where I'm From",
+              "Age / Nationality / Occupation",
+              "Simple Questions",
+            ],
+          },
+        ],
+      },
+      {
+        id: "mod3",
+        name: "Everyday Phrases & Survival English",
+        units: [
+          {
+            id: "unit1",
+            name: "Classroom and Public Phrases",
+            lessons: [
+              "I don't understand / Please repeat",
+              "I need / I want",
+              "Giving Simple Instructions",
+            ],
+          },
+        ],
+      },
+      {
+        id: "mod4",
+        name: "Family, Friends & Descriptions",
+        units: [
+          {
+            id: "unit1",
+            name: "Family Vocabulary",
+            lessons: ["Immediate Family", "This is my mother"],
+          },
+          {
+            id: "unit2",
+            name: "Describing People",
+            lessons: ["Appearance", "Personality"],
+          },
+        ],
+      },
+      {
+        id: "mod5",
+        name: "Daily Life & Routines",
+        units: [
+          {
+            id: "unit1",
+            name: "Common Verbs & Time",
+            lessons: ["Daily Actions", "Time & Days"],
+          },
+        ],
+      },
+    ],
+  },
+  A1: {
+    modules: [
+      {
+        id: "mod1",
+        name: "Daily Life & Routines",
+        units: [
+          {
+            id: "unit1",
+            name: "Talking About Your Day",
+            lessons: [
+              "Daily Activities",
+              "Time Expressions",
+              "Talking About School & Home",
+            ],
+          },
+          {
+            id: "unit2",
+            name: "The Clock & Scheduling",
+            lessons: [
+              "Telling the Time",
+              "Asking What time do you",
+              "Expressing Frequency",
+            ],
+          },
+          {
+            id: "unit3",
+            name: "Daily Habits and Routines",
+            lessons: [
+              "Present Simple (affirmative)",
+              "Present Simple (negative)",
+              "Short answers and Yes/No Questions",
+            ],
+          },
+          {
+            id: "unit4",
+            name: "Weekends and Free Time",
+            lessons: [
+              "Weekend Activities",
+              "Talking About Hobbies",
+              "Likes/Dislikes",
+            ],
+          },
+        ],
+      },
+      {
+        id: "mod2",
+        name: "Food and Meals",
+        units: [
+          {
+            id: "unit1",
+            name: "Food Vocabulary",
+            lessons: [
+              "Fruits & Vegetables",
+              "Drinks & Snacks",
+              "Meals of the Day",
+            ],
+          },
+          {
+            id: "unit2",
+            name: "In the Kitchen",
+            lessons: [
+              "Common kitchen verbs",
+              "Cooking utensils and appliances",
+            ],
+          },
+          {
+            id: "unit3",
+            name: "Preferences & Ordering",
+            lessons: ["I'd like / Can I have", "At a restaurant/café"],
+          },
+          {
+            id: "unit4",
+            name: "Countable/Uncountable Nouns",
+            lessons: ["Some / Any / A lot of", "Quantifiers & Containers"],
+          },
+        ],
+      },
+      {
+        id: "mod3",
+        name: "Describing People & Things",
+        units: [
+          {
+            id: "unit1",
+            name: "Physical Appearance",
+            lessons: [
+              "Height, hair, eyes, clothes",
+              "He has / She is structures",
+            ],
+          },
+          {
+            id: "unit2",
+            name: "Personality Traits",
+            lessons: [
+              "Adjectives for personality",
+              "Talking about friends and family",
+            ],
+          },
+          {
+            id: "unit3",
+            name: "Comparing People and Things",
+            lessons: ["-er adjectives + than", "Irregular comparatives"],
+          },
+          {
+            id: "unit4",
+            name: "Talking About Objects",
+            lessons: ["Everyday items", "Describing size, color, material"],
+          },
+        ],
+      },
+    ],
+  },
+  A2: {
+    modules: [
+      {
+        id: "mod1",
+        name: "Talking About the Future and Opinions",
+        units: [
+          {
+            id: "unit1",
+            name: "Talking About the Future",
+            lessons: [
+              "Be going to for plans",
+              "Will for predictions",
+              "Future time expressions",
+            ],
+          },
+          {
+            id: "unit2",
+            name: "Making Arrangements",
+            lessons: [
+              "Invitations and polite refusals",
+              "Suggesting time and place",
+              "Finalizing plans",
+            ],
+          },
+          {
+            id: "unit3",
+            name: "Giving Opinions",
+            lessons: [
+              "Expressing opinions",
+              "Agreeing/disagreeing politely",
+              "Backing opinions with reasons",
+            ],
+          },
+          {
+            id: "unit4",
+            name: "Preferences and Comparisons",
+            lessons: [
+              "Prefer, would rather",
+              "Comparative adjectives",
+              "Explaining preferences",
+            ],
+          },
+        ],
+      },
+      {
+        id: "mod2",
+        name: "Past Experiences and Storytelling",
+        units: [
+          {
+            id: "unit1",
+            name: "Past Tense Forms",
+            lessons: [
+              "Regular/irregular verb review",
+              "Past Simple negatives and questions",
+              "Time expressions",
+            ],
+          },
+          {
+            id: "unit2",
+            name: "Personal Experiences",
+            lessons: [
+              "Have you ever intro",
+              "Describing emotional reactions",
+              "Asking follow-up questions",
+            ],
+          },
+          {
+            id: "unit3",
+            name: "Telling Stories",
+            lessons: [
+              "Sequencing events",
+              "Linking words",
+              "Writing short personal narratives",
+            ],
+          },
+          {
+            id: "unit4",
+            name: "Travel and Cultural Memories",
+            lessons: [
+              "Talking about past trips",
+              "Describing what you saw/did/ate",
+              "Cultural comparisons",
+            ],
+          },
+        ],
+      },
+    ],
+  },
+};
+
+// ADD THIS FUNCTION after the curriculum data (around line 200)
+
+const organizeContentByCurriculum = (lessons) => {
+  const organizedContent = {};
+
+  // Initialize structure for all levels
+  Object.keys(CURRICULUM_DATA).forEach((level) => {
+    organizedContent[level] = {
+      name: `Level ${level}`,
+      modules: CURRICULUM_DATA[level].modules.map((module) => ({
+        ...module,
+        units: module.units.map((unit) => ({
+          ...unit,
+          lessons: unit.lessons.map((lessonName) => {
+            // ENHANCED MATCHING: Find matching lesson from Firebase with multiple matching strategies
+            const matchingLesson = lessons.find((lesson) => {
+              // Strategy 1: Direct field matching (for new upload structure)
+              if (
+                lesson.level === level &&
+                lesson.moduleId === module.id &&
+                lesson.unitId === unit.id &&
+                lesson.targetLesson === lessonName
+              ) {
+                return true;
+              }
+
+              // Strategy 2: Legacy field matching (for old upload structure)
+              if (
+                lesson.level === level &&
+                lesson.module === module.id &&
+                lesson.unit === unit.id &&
+                lesson.lesson === lessonName
+              ) {
+                return true;
+              }
+
+              // Strategy 3: Title-based fuzzy matching
+              if (
+                lesson.level === level &&
+                (lesson.moduleId === module.id ||
+                  lesson.module === module.id) &&
+                (lesson.unitId === unit.id || lesson.unit === unit.id)
+              ) {
+                const lessonTitle = lesson.title?.toLowerCase() || "";
+                const targetName = lessonName.toLowerCase();
+
+                // Exact title match
+                if (lessonTitle === targetName) return true;
+
+                // Title contains lesson name or vice versa
+                if (
+                  lessonTitle.includes(targetName) ||
+                  targetName.includes(lessonTitle)
+                ) {
+                  return true;
+                }
+
+                // Remove common words and check similarity
+                const cleanTitle = lessonTitle
+                  .replace(/\b(the|and|or|a|an|in|on|at|for|to|of)\b/g, "")
+                  .trim();
+                const cleanTarget = targetName
+                  .replace(/\b(the|and|or|a|an|in|on|at|for|to|of)\b/g, "")
+                  .trim();
+
+                if (
+                  cleanTitle.includes(cleanTarget) ||
+                  cleanTarget.includes(cleanTitle)
+                ) {
+                  return true;
+                }
+              }
+
+              return false;
+            });
+
+            return {
+              name: lessonName,
+              content: matchingLesson || null,
+              hasContent: !!matchingLesson,
+              // Add metadata for debugging
+              debugInfo: {
+                expectedLevel: level,
+                expectedModule: module.id,
+                expectedUnit: unit.id,
+                expectedLesson: lessonName,
+              },
+            };
+          }),
+        })),
+      })),
+    };
+  });
+
+  return organizedContent;
+};
 
 // Subscribe to lessons collection realtime updates
 export const subscribeToLessons = (callback) => {
@@ -173,6 +559,8 @@ export const createOrUpdateUserProfile = async (user) => {
         email: user.email,
         displayName: user.displayName || "",
         photoURL: user.photoURL || "",
+        name: user.displayName || "", // Added
+        avatar: user.photoURL || "", // Added
         createdAt: new Date(),
         role: "user",
         bio: "",
@@ -264,11 +652,23 @@ const ProfileEditModal = ({ isOpen, onClose, userProfile, onSave }) => {
     bio: "",
     location: "",
     language: "English",
-    phone: "",
-    dateOfBirth: "",
-    website: "",
+    photoURL: "",
+    name: "", // Added from simpler modal
+    avatar: "", // Added from simpler modal
   });
   const [saving, setSaving] = useState(false);
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const photoURL = event.target.result;
+        handleInputChange("photoURL", photoURL);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   useEffect(() => {
     if (userProfile) {
@@ -277,9 +677,9 @@ const ProfileEditModal = ({ isOpen, onClose, userProfile, onSave }) => {
         bio: userProfile.bio || "",
         location: userProfile.location || "",
         language: userProfile.language || "English",
-        phone: userProfile.phone || "",
-        dateOfBirth: userProfile.dateOfBirth || "",
-        website: userProfile.website || "",
+        photoURL: userProfile.photoURL || "",
+        name: userProfile.name || userProfile.displayName || "", // Added
+        avatar: userProfile.avatar || userProfile.photoURL || "", // Added
       });
     }
   }, [userProfile]);
@@ -306,8 +706,8 @@ const ProfileEditModal = ({ isOpen, onClose, userProfile, onSave }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-800">Edit Profile</h2>
@@ -324,141 +724,70 @@ const ProfileEditModal = ({ isOpen, onClose, userProfile, onSave }) => {
           <div className="space-y-6">
             {/* Profile Picture Section */}
             <div className="text-center">
-              <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
-                {formData.displayName?.charAt(0) ||
-                  userProfile?.email?.charAt(0) ||
-                  "U"}
+              <div className="relative inline-block">
+                <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                  {formData.avatar ||
+                  userProfile?.photoURL ||
+                  formData.photoURL ? (
+                    <img
+                      src={
+                        formData.avatar ||
+                        userProfile.photoURL ||
+                        formData.photoURL
+                      }
+                      alt="Profile"
+                      className="w-24 h-24 rounded-full object-cover"
+                    />
+                  ) : (
+                    (formData.name || formData.displayName)?.charAt(0) ||
+                    userProfile?.email?.charAt(0) ||
+                    "U"
+                  )}
+                </div>
+                <input
+                  type="file"
+                  id="profilePhoto"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="profilePhoto"
+                  className="absolute bottom-0 right-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors"
+                >
+                  <Camera size={16} className="text-white" />
+                </label>
               </div>
-              <button className="flex items-center justify-center mx-auto px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                <Camera size={16} className="mr-2" />
-                Change Photo
-              </button>
+              <p className="text-sm text-gray-500 mt-2">
+                Click camera icon to change photo
+              </p>
             </div>
 
             {/* Form Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Display Name
+                  Name (Alternative)
                 </label>
                 <input
                   type="text"
-                  value={formData.displayName}
-                  onChange={(e) =>
-                    handleInputChange("displayName", e.target.value)
-                  }
+                  value={formData.name}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Your display name"
+                  placeholder="Alternative name field"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={userProfile?.email || ""}
-                  disabled
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone
-                </label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Your phone number"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date of Birth
-                </label>
-                <input
-                  type="date"
-                  value={formData.dateOfBirth}
-                  onChange={(e) =>
-                    handleInputChange("dateOfBirth", e.target.value)
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Location
-                </label>
-                <input
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) =>
-                    handleInputChange("location", e.target.value)
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="City, Country"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Native Language
-                </label>
-                <select
-                  value={formData.language}
-                  onChange={(e) =>
-                    handleInputChange("language", e.target.value)
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="English">English</option>
-                  <option value="Spanish">Spanish</option>
-                  <option value="French">French</option>
-                  <option value="German">German</option>
-                  <option value="Italian">Italian</option>
-                  <option value="Portuguese">Portuguese</option>
-                  <option value="Russian">Russian</option>
-                  <option value="Chinese">Chinese</option>
-                  <option value="Japanese">Japanese</option>
-                  <option value="Korean">Korean</option>
-                  <option value="Arabic">Arabic</option>
-                  <option value="Hindi">Hindi</option>
-                  <option value="Turkish">Turkish</option>
-                  <option value="Dutch">Dutch</option>
-                  <option value="Swedish">Swedish</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Website
+                  Avatar URL (Alternative)
                 </label>
                 <input
                   type="url"
-                  value={formData.website}
-                  onChange={(e) => handleInputChange("website", e.target.value)}
+                  value={formData.avatar}
+                  onChange={(e) => handleInputChange("avatar", e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="https://your-website.com"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Bio
-                </label>
-                <textarea
-                  value={formData.bio}
-                  onChange={(e) => handleInputChange("bio", e.target.value)}
-                  rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Tell us about yourself..."
+                  placeholder="https://example.com/avatar.jpg"
                 />
               </div>
             </div>
@@ -505,11 +834,6 @@ const Navigation = () => {
     }
   };
 
-  const handleViewToggle = () => {
-    // Redirect back to volunteer dashboard
-    window.location.href = "/VolunteerDashboard";
-  };
-
   return (
     <nav className="bg-white shadow-lg border-b border-blue-100">
       <div className="max-w-7xl mx-auto px-4">
@@ -523,7 +847,7 @@ const Navigation = () => {
           </div>
 
           {/* Navigation Links */}
-          <div className="hidden md:flex items-center space-x-6">
+          <div className="hidden lg:flex items-center space-x-6">
             <a
               href="#"
               className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors"
@@ -554,64 +878,47 @@ const Navigation = () => {
             </a>
           </div>
 
-          {/* View Toggle and User Menu Container */}
-          <div className="flex items-center space-x-4">
-            {/* View Toggle Switch */}
-            <div className="flex items-center space-x-3 bg-gray-50 rounded-lg p-3">
-              <span className="text-sm text-gray-600 whitespace-nowrap">
-                User View
+          {/* User Menu */}
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 transition-colors"
+            >
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                {userProfile?.displayName?.charAt(0) ||
+                  user?.displayName?.charAt(0) ||
+                  user?.email?.charAt(0) ||
+                  "U"}
+              </div>
+              <span className="hidden md:block">
+                {userProfile?.displayName ||
+                  user?.displayName ||
+                  user?.email ||
+                  "User"}
               </span>
-              <button
-                onClick={handleViewToggle}
-                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 bg-blue-600"
-                title="Switch to Volunteer Dashboard"
-              >
-                <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-6" />
-              </button>
-            </div>
+            </button>
 
-            {/* User Menu */}
-            <div className="relative">
-              <button
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 transition-colors"
-              >
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                  {userProfile?.displayName?.charAt(0) ||
-                    user?.displayName?.charAt(0) ||
-                    user?.email?.charAt(0) ||
-                    "U"}
-                </div>
-                <span className="hidden md:block">
-                  {userProfile?.displayName ||
-                    user?.displayName ||
-                    user?.email ||
-                    "User"}
-                </span>
-              </button>
-
-              {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10">
-                  <button
-                    onClick={() => {
-                      setShowProfileModal(true);
-                      setShowUserMenu(false);
-                    }}
-                    className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-blue-50 transition-colors"
-                  >
-                    <User size={16} className="inline mr-2" />
-                    Edit Profile
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
-                  >
-                    <LogOut size={16} className="inline mr-2" />
-                    Logout
-                  </button>
-                </div>
-              )}
-            </div>
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10">
+                <button
+                  onClick={() => {
+                    setShowProfileModal(true);
+                    setShowUserMenu(false);
+                  }}
+                  className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-blue-50 transition-colors"
+                >
+                  <User size={16} className="inline mr-2" />
+                  Edit Profile
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut size={16} className="inline mr-2" />
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -977,26 +1284,315 @@ const AudioPlayer = ({ audioUrl, title }) => {
   );
 };
 
-// Lesson Viewer Modal Component
+// REPLACE the DocumentViewer component (around line 600) with this enhanced version:
+
+const DocumentViewer = ({ documentUrl, title, contentType }) => {
+  const [viewerError, setViewerError] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const handleLoad = () => setLoading(false);
+  const handleError = () => {
+    setViewerError(true);
+    setLoading(false);
+  };
+
+  // Enhanced URL processing
+  const getDisplayUrl = (url) => {
+    if (!url) return "";
+
+    // Use the embeddable URL helper
+    const embeddableUrl = getEmbeddableUrl(url, contentType);
+
+    // For Google Drive, ensure we're using the preview endpoint
+    if (embeddableUrl.includes("drive.google.com")) {
+      // Make sure it's the preview version for documents
+      return embeddableUrl
+        .replace("/view", "/preview")
+        .replace("/edit", "/preview");
+    }
+
+    return embeddableUrl;
+  };
+
+  const displayUrl = getDisplayUrl(documentUrl);
+
+  // Enhanced content type detection
+  const getContentTypeFromUrl = (url) => {
+    if (!url) return "unknown";
+
+    const lowerUrl = url.toLowerCase();
+
+    // Check explicit content type first
+    if (contentType && contentType !== "unknown") {
+      return contentType.toLowerCase();
+    }
+
+    // Detect from URL patterns
+    if (lowerUrl.includes("drive.google.com")) {
+      // Could be any type in Google Drive, default to document
+      return "document";
+    }
+
+    if (/\.(pdf)$/i.test(lowerUrl) || lowerUrl.includes("pdf")) {
+      return "pdf";
+    }
+
+    if (/\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(lowerUrl)) {
+      return "image";
+    }
+
+    if (/\.(mp4|avi|mov|wmv|flv)$/i.test(lowerUrl)) {
+      return "video";
+    }
+
+    return "document";
+  };
+
+  const detectedType = getContentTypeFromUrl(displayUrl);
+
+  if (viewerError) {
+    return (
+      <div className="bg-gray-100 rounded-lg p-8 text-center">
+        <FileText size={48} className="mx-auto text-gray-400 mb-4" />
+        <p className="text-gray-600 mb-4">Unable to display document preview</p>
+        <div className="space-y-2">
+          <a
+            href={displayUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors mr-2"
+          >
+            <Download size={16} className="mr-2" />
+            Open Document
+          </a>
+          {documentUrl !== displayUrl && (
+            <a
+              href={documentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              <Download size={16} className="mr-2" />
+              Original Link
+            </a>
+          )}
+        </div>
+        <p className="text-xs text-gray-500 mt-4">
+          If preview fails, click "Open Document" to view in a new tab
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg z-10">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+            <p className="text-sm text-gray-600">Loading document...</p>
+          </div>
+        </div>
+      )}
+
+      {detectedType === "image" ? (
+        <img
+          src={displayUrl}
+          alt={title}
+          className="max-w-full h-auto rounded-lg shadow-lg"
+          onLoad={handleLoad}
+          onError={handleError}
+        />
+      ) : detectedType === "video" ? (
+        <video
+          src={displayUrl}
+          className="w-full rounded-lg shadow-lg"
+          controls
+          onLoadedData={handleLoad}
+          onError={handleError}
+        />
+      ) : (
+        // Default to iframe for documents and PDFs
+        <div className="relative">
+          <iframe
+            src={displayUrl}
+            className="w-full h-96 border rounded-lg"
+            title={title}
+            onLoad={handleLoad}
+            onError={handleError}
+            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+          />
+          {/* Fallback button overlay */}
+          <div className="absolute top-2 right-2">
+            <a
+              href={displayUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
+            >
+              Open in new tab
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ADD this helper function before the LessonViewer component:
+
+const getEmbeddableUrl = (originalUrl, contentType) => {
+  if (!originalUrl) return null;
+
+  // Google Drive URLs
+  if (originalUrl.includes("drive.google.com")) {
+    // Extract file ID from various Google Drive URL formats
+    let fileId = null;
+
+    // Format: https://drive.google.com/file/d/FILE_ID/view
+    const viewMatch = originalUrl.match(/\/file\/d\/([a-zA-Z0-9-_]+)/);
+    if (viewMatch) fileId = viewMatch[1];
+
+    // Format: https://drive.google.com/open?id=FILE_ID
+    const openMatch = originalUrl.match(/[?&]id=([a-zA-Z0-9-_]+)/);
+    if (openMatch) fileId = openMatch[1];
+
+    if (fileId) {
+      // Return appropriate embed URL based on content type
+      if (contentType === "video" || originalUrl.includes("video")) {
+        return `https://drive.google.com/file/d/${fileId}/preview`;
+      } else {
+        return `https://drive.google.com/file/d/${fileId}/preview`;
+      }
+    }
+  }
+
+  // YouTube URLs
+  if (originalUrl.includes("youtube.com") || originalUrl.includes("youtu.be")) {
+    let videoId = null;
+
+    if (originalUrl.includes("youtube.com/watch?v=")) {
+      videoId = originalUrl.split("v=")[1]?.split("&")[0];
+    } else if (originalUrl.includes("youtu.be/")) {
+      videoId = originalUrl.split("youtu.be/")[1]?.split("?")[0];
+    } else if (originalUrl.includes("youtube.com/embed/")) {
+      // Already an embed URL
+      return originalUrl;
+    }
+
+    if (videoId) {
+      return `https://www.youtube.com/embed/${videoId}`;
+    }
+  }
+
+  // Dropbox URLs
+  if (originalUrl.includes("dropbox.com")) {
+    return originalUrl.replace("?dl=0", "?raw=1").replace("?dl=1", "?raw=1");
+  }
+
+  // OneDrive URLs
+  if (
+    originalUrl.includes("onedrive.live.com") ||
+    originalUrl.includes("1drv.ms")
+  ) {
+    // Convert OneDrive sharing links to embed format
+    if (!originalUrl.includes("embed")) {
+      return originalUrl.replace("/view", "/embed").replace("?", "/embed?");
+    }
+  }
+
+  // Firebase Storage URLs - ensure they have the media parameter
+  if (originalUrl.includes("firebase") && originalUrl.includes("/o/")) {
+    if (!originalUrl.includes("alt=media")) {
+      return originalUrl.includes("?")
+        ? `${originalUrl}&alt=media`
+        : `${originalUrl}?alt=media`;
+    }
+  }
+
+  return originalUrl;
+};
+
+// Lesson Viewer Modal Component - DYNAMIC VIDEO SIZING
 const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
+  // ALL HOOKS MUST BE CALLED FIRST, BEFORE ANY CONDITIONAL RETURNS
   const [activeTab, setActiveTab] = useState("video");
   const [lessonCompleted, setLessonCompleted] = useState(false);
+  const [availableHeight, setAvailableHeight] = useState(0);
   const { user } = useAppContext();
+  const contentRef = React.useRef(null);
 
+  // useEffect for calculating available height
   useEffect(() => {
-    if (lesson && lesson.type) {
-      if (lesson.type.includes("video")) {
+    const calculateHeight = () => {
+      if (contentRef.current && activeTab === "video") {
+        const contentRect = contentRef.current.getBoundingClientRect();
+        setAvailableHeight(contentRect.height - 32); // Subtract padding
+      }
+    };
+
+    if (isOpen && activeTab === "video") {
+      // Small delay to ensure DOM is rendered
+      setTimeout(calculateHeight, 100);
+      window.addEventListener("resize", calculateHeight);
+      return () => window.removeEventListener("resize", calculateHeight);
+    }
+  }, [isOpen, activeTab]);
+
+  // useEffect for tab detection
+  useEffect(() => {
+    if (lesson) {
+      // Enhanced tab detection based on available content
+      const hasVideo =
+        lesson.videoUrl ||
+        (lesson.url &&
+          (lesson.contentType === "video" ||
+            lesson.type?.includes("video") ||
+            lesson.url.includes("youtube") ||
+            lesson.url.includes("drive.google.com")));
+
+      const hasAudio =
+        lesson.audioUrl ||
+        (lesson.url &&
+          (lesson.contentType === "audio" || lesson.type?.includes("audio")));
+
+      const hasDocument =
+        lesson.documentUrl ||
+        (lesson.url &&
+          (lesson.contentType === "document" ||
+            lesson.type?.includes("document") ||
+            (!hasVideo && !hasAudio))); // Default to document if no other type
+
+      const hasFlashcards = lesson.flashcards && lesson.flashcards.length > 0;
+
+      // Set default active tab based on priority: video > audio > flashcards > document
+      if (hasVideo) {
         setActiveTab("video");
-      } else if (lesson.type.includes("audio")) {
+      } else if (hasAudio) {
         setActiveTab("audio");
-      } else if (lesson.flashcards) {
+      } else if (hasFlashcards) {
         setActiveTab("flashcards");
-      } else if (lesson.type.includes("document")) {
+      } else if (hasDocument) {
+        setActiveTab("document");
+      } else {
+        // Fallback - try to detect from URL or show document tab
         setActiveTab("document");
       }
     }
   }, [lesson]);
 
+  // useEffect for preventing background scrolling
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent background scrolling when modal is open
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "unset";
+      };
+    }
+  }, [isOpen]);
+
+  // CONDITIONAL RETURN AFTER ALL HOOKS
   if (!isOpen || !lesson) return null;
 
   const handleComplete = async () => {
@@ -1017,11 +1613,36 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
     handleComplete();
   };
 
+  // Calculate video dimensions that fit within available space
+  const getVideoStyle = () => {
+    if (!availableHeight || activeTab !== "video") return {};
+
+    const aspectRatio = 16 / 9;
+    const maxWidth =
+      contentRef.current?.getBoundingClientRect().width - 64 || 800; // Subtract padding
+
+    // Calculate dimensions based on available space
+    let width = maxWidth;
+    let height = width / aspectRatio;
+
+    // If height exceeds available space, constrain by height
+    if (height > availableHeight) {
+      height = availableHeight;
+      width = height * aspectRatio;
+    }
+
+    return {
+      width: `${width}px`,
+      height: `${height}px`,
+      maxWidth: "100%",
+    };
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4 overflow-hidden">
+      <div className="bg-white rounded-xl w-full max-w-7xl h-[95vh] sm:h-[90vh] overflow-hidden shadow-2xl flex flex-col">
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
+        <div className="flex justify-between items-center p-6 border-b border-gray-200 flex-shrink-0">
           <div>
             <h2 className="text-2xl font-bold text-gray-800">{lesson.title}</h2>
             <p className="text-gray-600">{lesson.description}</p>
@@ -1040,112 +1661,231 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
           </button>
         </div>
 
-        {/* Content Tabs */}
-        <div className="flex border-b border-gray-200">
-          {lesson.type && lesson.type.includes("video") && (
-            <button
-              onClick={() => setActiveTab("video")}
-              className={`px-6 py-3 flex items-center space-x-2 transition-colors ${
-                activeTab === "video"
-                  ? "border-b-2 border-blue-500 text-blue-600"
-                  : "text-gray-600 hover:text-blue-600"
-              }`}
-            >
-              <Video size={20} />
-              <span>Video</span>
-            </button>
-          )}
-          {lesson.type && lesson.type.includes("audio") && (
-            <button
-              onClick={() => setActiveTab("audio")}
-              className={`px-6 py-3 flex items-center space-x-2 transition-colors ${
-                activeTab === "audio"
-                  ? "border-b-2 border-blue-500 text-blue-600"
-                  : "text-gray-600 hover:text-blue-600"
-              }`}
-            >
-              <Volume2 size={20} />
-              <span>Audio</span>
-            </button>
-          )}
-          {lesson.flashcards && (
-            <button
-              onClick={() => setActiveTab("flashcards")}
-              className={`px-6 py-3 flex items-center space-x-2 transition-colors ${
-                activeTab === "flashcards"
-                  ? "border-b-2 border-blue-500 text-blue-600"
-                  : "text-gray-600 hover:text-blue-600"
-              }`}
-            >
-              <BookOpen size={20} />
-              <span>Flashcards</span>
-            </button>
-          )}
-          {lesson.type && lesson.type.includes("document") && (
-            <button
-              onClick={() => setActiveTab("document")}
-              className={`px-6 py-3 flex items-center space-x-2 transition-colors ${
-                activeTab === "document"
-                  ? "border-b-2 border-blue-500 text-blue-600"
-                  : "text-gray-600 hover:text-blue-600"
-              }`}
-            >
-              <FileText size={20} />
-              <span>Document</span>
-            </button>
-          )}
+        {/* Content Tabs with Enhanced Detection */}
+        <div className="flex border-b border-gray-200 overflow-x-auto scrollbar-hide flex-shrink-0">
+          <div className="flex min-w-full">
+            {(() => {
+              const tabs = [];
+
+              // Video tab
+              const hasVideo =
+                lesson.videoUrl ||
+                (lesson.url &&
+                  (lesson.contentType === "video" ||
+                    lesson.type?.includes("video") ||
+                    lesson.url.includes("youtube") ||
+                    lesson.url.includes("drive.google.com")));
+
+              if (hasVideo) {
+                tabs.push(
+                  <button
+                    key="video"
+                    onClick={() => setActiveTab("video")}
+                    className={`px-6 py-3 flex items-center space-x-2 transition-colors whitespace-nowrap ${
+                      activeTab === "video"
+                        ? "border-b-2 border-blue-500 text-blue-600"
+                        : "text-gray-600 hover:text-blue-600"
+                    }`}
+                  >
+                    <Video size={20} />
+                    <span>Video</span>
+                  </button>
+                );
+              }
+
+              // Audio tab
+              const hasAudio =
+                lesson.audioUrl ||
+                (lesson.url &&
+                  (lesson.contentType === "audio" ||
+                    lesson.type?.includes("audio")));
+
+              if (hasAudio) {
+                tabs.push(
+                  <button
+                    key="audio"
+                    onClick={() => setActiveTab("audio")}
+                    className={`px-6 py-3 flex items-center space-x-2 transition-colors whitespace-nowrap ${
+                      activeTab === "audio"
+                        ? "border-b-2 border-blue-500 text-blue-600"
+                        : "text-gray-600 hover:text-blue-600"
+                    }`}
+                  >
+                    <Volume2 size={20} />
+                    <span>Audio</span>
+                  </button>
+                );
+              }
+
+              // Flashcards tab
+              if (lesson.flashcards && lesson.flashcards.length > 0) {
+                tabs.push(
+                  <button
+                    key="flashcards"
+                    onClick={() => setActiveTab("flashcards")}
+                    className={`px-6 py-3 flex items-center space-x-2 transition-colors whitespace-nowrap ${
+                      activeTab === "flashcards"
+                        ? "border-b-2 border-blue-500 text-blue-600"
+                        : "text-gray-600 hover:text-blue-600"
+                    }`}
+                  >
+                    <BookOpen size={20} />
+                    <span>Flashcards</span>
+                  </button>
+                );
+              }
+
+              // Document tab
+              const hasDocument =
+                lesson.documentUrl ||
+                lesson.url ||
+                lesson.contentType === "document" ||
+                lesson.type?.includes("document") ||
+                (!hasVideo && !hasAudio); // Show if no other content
+
+              if (hasDocument) {
+                tabs.push(
+                  <button
+                    key="document"
+                    onClick={() => setActiveTab("document")}
+                    className={`px-6 py-3 flex items-center space-x-2 transition-colors whitespace-nowrap ${
+                      activeTab === "document"
+                        ? "border-b-2 border-blue-500 text-blue-600"
+                        : "text-gray-600 hover:text-blue-600"
+                    }`}
+                  >
+                    <FileText size={20} />
+                    <span>Document</span>
+                  </button>
+                );
+              }
+
+              return tabs;
+            })()}
+          </div>
         </div>
 
-        {/* Content Area */}
-        <div className="p-6 max-h-[calc(90vh-200px)] overflow-y-auto">
-          {activeTab === "video" && lesson.videoUrl && (
-            <div className="aspect-video">
-              <iframe
-                src={lesson.videoUrl}
-                className="w-full h-full rounded-lg"
-                allowFullScreen
-                title={lesson.title}
-              ></iframe>
+        {/* Content Area - DYNAMICALLY SIZED */}
+        <div ref={contentRef} className="flex-1 overflow-y-auto">
+          {activeTab === "video" && (lesson.videoUrl || lesson.url) && (
+            <div className="flex items-center justify-center w-full h-full p-4 lg:p-6 xl:p-8">
+              <div
+                style={getVideoStyle()}
+                className="rounded-lg overflow-hidden"
+              >
+                {(() => {
+                  const videoUrl = getEmbeddableUrl(
+                    lesson.videoUrl || lesson.url,
+                    lesson.contentType
+                  );
+
+                  if (
+                    videoUrl.includes("youtube.com") ||
+                    videoUrl.includes("youtu.be")
+                  ) {
+                    return (
+                      <iframe
+                        src={videoUrl}
+                        className="w-full h-full rounded-lg"
+                        allowFullScreen
+                        title={lesson.title}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      />
+                    );
+                  } else if (videoUrl.includes("drive.google.com")) {
+                    return (
+                      <iframe
+                        src={videoUrl}
+                        className="w-full h-full rounded-lg"
+                        allowFullScreen
+                        title={lesson.title}
+                        allow="autoplay"
+                      />
+                    );
+                  } else if (videoUrl.includes("firebase")) {
+                    return (
+                      <video
+                        src={videoUrl}
+                        className="w-full h-full rounded-lg"
+                        controls
+                        title={lesson.title}
+                      />
+                    );
+                  } else {
+                    return (
+                      <iframe
+                        src={videoUrl}
+                        className="w-full h-full rounded-lg"
+                        allowFullScreen
+                        title={lesson.title}
+                      />
+                    );
+                  }
+                })()}
+              </div>
             </div>
           )}
 
-          {activeTab === "audio" && lesson.audioUrl && (
-            <AudioPlayer audioUrl={lesson.audioUrl} title={lesson.title} />
-          )}
+          {activeTab !== "video" && (
+            <div className="p-4 lg:p-6 xl:p-8">
+              {activeTab === "audio" && lesson.audioUrl && (
+                <div className="max-w-2xl mx-auto">
+                  <AudioPlayer
+                    audioUrl={lesson.audioUrl}
+                    title={lesson.title}
+                  />
+                </div>
+              )}
 
-          {activeTab === "flashcards" && lesson.flashcards && (
-            <FlashcardViewer
-              flashcards={lesson.flashcards}
-              onComplete={handleFlashcardsComplete}
-            />
-          )}
+              {activeTab === "flashcards" && lesson.flashcards && (
+                <div className="max-w-4xl mx-auto">
+                  <FlashcardViewer
+                    flashcards={lesson.flashcards}
+                    onComplete={handleFlashcardsComplete}
+                  />
+                </div>
+              )}
 
-          {activeTab === "document" && lesson.documentUrl && (
-            <div className="text-center">
-              <div className="bg-gray-50 rounded-xl p-8 mb-4">
-                <FileText size={48} className="mx-auto text-gray-400 mb-4" />
-                <h4 className="text-lg font-medium text-gray-800 mb-2">
-                  {lesson.title} - Worksheet
-                </h4>
-                <p className="text-gray-600 mb-4">
-                  Download the worksheet to practice offline
-                </p>
-                <a
-                  href={lesson.documentUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  <Download size={20} className="mr-2" />
-                  Download PDF
-                </a>
-              </div>
+              {activeTab === "document" &&
+                (lesson.documentUrl || lesson.url) && (
+                  <div className="space-y-4">
+                    <div className="bg-gray-50 rounded-xl p-4 lg:p-6">
+                      <h4 className="text-lg font-medium text-gray-800 mb-3 lg:mb-4">
+                        {lesson.title} - Document
+                      </h4>
+                      <div className="mb-4">
+                        <DocumentViewer
+                          documentUrl={getEmbeddableUrl(
+                            lesson.documentUrl || lesson.url,
+                            lesson.contentType
+                          )}
+                          title={lesson.title}
+                          contentType={lesson.contentType}
+                        />
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center mt-4">
+                        <a
+                          href={getEmbeddableUrl(
+                            lesson.documentUrl || lesson.url,
+                            lesson.contentType
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                        >
+                          <Download size={20} className="mr-2" />
+                          Download/View
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex justify-between items-center p-6 border-t border-gray-200 bg-gray-50">
+        <div className="flex-shrink-0 flex justify-between items-center p-4 lg:p-6 border-t border-gray-200 bg-gray-50">
           <div className="flex items-center space-x-4">
             <span
               className={`px-3 py-1 rounded-full text-sm ${
@@ -1219,7 +1959,6 @@ const LessonCard = ({ lesson, progress, onViewLesson }) => {
           {lesson.lesson && ` → ${lesson.lesson}`}
         </div>
       )}
-
       <div className="flex justify-between items-start mb-4">
         <span
           className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -1239,37 +1978,95 @@ const LessonCard = ({ lesson, progress, onViewLesson }) => {
           <span>{getStatusText()}</span>
         </div>
       </div>
-
       <h3 className="text-xl font-bold text-gray-800 mb-2">{lesson.title}</h3>
       <p className="text-gray-600 mb-4 line-clamp-2">{lesson.description}</p>
-
       <div className="flex items-center space-x-3 mb-4">
-        {lesson.type && lesson.type.includes("video") && (
-          <div className="flex items-center space-x-1 text-blue-600">
-            <Video size={16} />
-            <span className="text-xs">Video</span>
-          </div>
-        )}
-        {lesson.type && lesson.type.includes("audio") && (
-          <div className="flex items-center space-x-1 text-green-600">
-            <Volume2 size={16} />
-            <span className="text-xs">Audio</span>
-          </div>
-        )}
-        {lesson.flashcards && (
-          <div className="flex items-center space-x-1 text-purple-600">
-            <BookOpen size={16} />
-            <span className="text-xs">Flashcards</span>
-          </div>
-        )}
-        {lesson.type && lesson.type.includes("document") && (
-          <div className="flex items-center space-x-1 text-orange-600">
-            <FileText size={16} />
-            <span className="text-xs">Document</span>
-          </div>
-        )}
-      </div>
+        {(() => {
+          const contentTypes = [];
 
+          // Enhanced content type detection
+          const hasVideo =
+            lesson.videoUrl ||
+            lesson.url ||
+            (lesson.type && lesson.type.includes("video")) ||
+            (lesson.contentType && lesson.contentType.includes("video"));
+
+          const hasAudio =
+            lesson.audioUrl ||
+            (lesson.type && lesson.type.includes("audio")) ||
+            (lesson.contentType && lesson.contentType.includes("audio"));
+
+          const hasDocument =
+            lesson.documentUrl ||
+            lesson.url ||
+            (lesson.type && lesson.type.includes("document")) ||
+            (lesson.contentType && lesson.contentType.includes("document")) ||
+            (!hasVideo && !hasAudio); // Default to document if no other type
+
+          if (hasVideo) {
+            contentTypes.push(
+              <div
+                key="video"
+                className="flex items-center space-x-1 text-blue-600"
+              >
+                <Video size={16} />
+                <span className="text-xs">Video</span>
+              </div>
+            );
+          }
+
+          if (hasAudio) {
+            contentTypes.push(
+              <div
+                key="audio"
+                className="flex items-center space-x-1 text-green-600"
+              >
+                <Volume2 size={16} />
+                <span className="text-xs">Audio</span>
+              </div>
+            );
+          }
+
+          if (lesson.flashcards && lesson.flashcards.length > 0) {
+            contentTypes.push(
+              <div
+                key="flashcards"
+                className="flex items-center space-x-1 text-purple-600"
+              >
+                <BookOpen size={16} />
+                <span className="text-xs">Flashcards</span>
+              </div>
+            );
+          }
+
+          if (hasDocument && !hasVideo && !hasAudio) {
+            contentTypes.push(
+              <div
+                key="document"
+                className="flex items-center space-x-1 text-orange-600"
+              >
+                <FileText size={16} />
+                <span className="text-xs">Document</span>
+              </div>
+            );
+          }
+
+          // If no content types detected, show a generic indicator
+          if (contentTypes.length === 0) {
+            contentTypes.push(
+              <div
+                key="content"
+                className="flex items-center space-x-1 text-gray-600"
+              >
+                <FileText size={16} />
+                <span className="text-xs">Content</span>
+              </div>
+            );
+          }
+
+          return contentTypes;
+        })()}
+      </div>
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-2 text-sm text-gray-500">
           <Star size={16} className="text-yellow-500" />
@@ -1332,7 +2129,249 @@ const ContinueLearningButton = ({ lessons, userProgress, onViewLesson }) => {
   );
 };
 
-// Main App Component
+// ADD THIS COMPONENT after the ContinueLearningButton component (around line 900)
+
+const CurriculumBrowser = ({ lessons, userProgress, onViewLesson }) => {
+  const [selectedLevel, setSelectedLevel] = useState("A0");
+  const [selectedModule, setSelectedModule] = useState(null);
+  const [selectedUnit, setSelectedUnit] = useState(null);
+
+  const organizedContent = organizeContentByCurriculum(lessons);
+
+  const currentLevel = organizedContent[selectedLevel];
+  const currentModule = selectedModule
+    ? currentLevel.modules.find((m) => m.id === selectedModule)
+    : null;
+  const currentUnit =
+    selectedUnit && currentModule
+      ? currentModule.units.find((u) => u.id === selectedUnit)
+      : null;
+
+  const getLessonProgress = (lesson) => {
+    if (!lesson.content) {
+      // Try to find lesson by alternative matching
+      const alternativeMatch = lessons.find(
+        (l) =>
+          l.level === selectedLevel &&
+          (l.title?.toLowerCase().includes(lesson.name.toLowerCase()) ||
+            lesson.name.toLowerCase().includes(l.title?.toLowerCase()) ||
+            l.lesson === lesson.name)
+      );
+
+      if (alternativeMatch) {
+        lesson.content = alternativeMatch; // Update the lesson object
+        lesson.hasContent = true;
+      } else {
+        return "unavailable";
+      }
+    }
+
+    const progress = userProgress[lesson.content.id];
+    if (progress?.completed) return "completed";
+    if (progress?.started) return "started";
+    return "available";
+  };
+
+  const getProgressColor = (status) => {
+    switch (status) {
+      case "completed":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "started":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "available":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "unavailable":
+        return "bg-gray-100 text-gray-500 border-gray-200";
+      default:
+        return "bg-gray-100 text-gray-500 border-gray-200";
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">
+        Browse by Curriculum
+      </h2>
+
+      {/* Level Selection */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {Object.keys(CURRICULUM_DATA).map((level) => (
+          <button
+            key={level}
+            onClick={() => {
+              setSelectedLevel(level);
+              setSelectedModule(null);
+              setSelectedUnit(null);
+            }}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              selectedLevel === level
+                ? "bg-blue-500 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Level {level}
+          </button>
+        ))}
+      </div>
+
+      {/* Breadcrumb Navigation */}
+      <div className="flex items-center space-x-2 text-sm text-gray-600 mb-4">
+        <span>Level {selectedLevel}</span>
+        {currentModule && (
+          <>
+            <span>→</span>
+            <span>{currentModule.name}</span>
+          </>
+        )}
+        {currentUnit && (
+          <>
+            <span>→</span>
+            <span>{currentUnit.name}</span>
+          </>
+        )}
+      </div>
+
+      {/* Content Display */}
+      {!selectedModule ? (
+        // Module Selection
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {currentLevel.modules.map((module) => {
+            const totalLessons = module.units.reduce(
+              (acc, unit) => acc + unit.lessons.length,
+              0
+            );
+            const completedLessons = module.units.reduce(
+              (acc, unit) =>
+                acc +
+                unit.lessons.filter(
+                  (lesson) => getLessonProgress(lesson) === "completed"
+                ).length,
+              0
+            );
+
+            return (
+              <div
+                key={module.id}
+                onClick={() => setSelectedModule(module.id)}
+                className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-md transition-all cursor-pointer"
+              >
+                <h3 className="font-bold text-gray-800 mb-2">{module.name}</h3>
+                <p className="text-sm text-gray-600 mb-3">
+                  {module.units.length} units
+                </p>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500">
+                    {completedLessons}/{totalLessons} lessons completed
+                  </span>
+                  <div className="w-16 bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-500 h-2 rounded-full transition-all"
+                      style={{
+                        width: `${
+                          totalLessons > 0
+                            ? (completedLessons / totalLessons) * 100
+                            : 0
+                        }%`,
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : !selectedUnit ? (
+        // Unit Selection
+        <div>
+          <button
+            onClick={() => setSelectedModule(null)}
+            className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
+          >
+            <ArrowLeft size={16} className="mr-1" />
+            Back to Modules
+          </button>
+          <div className="grid grid-cols-1 gap-4">
+            {currentModule.units.map((unit) => {
+              const completedLessons = unit.lessons.filter(
+                (lesson) => getLessonProgress(lesson) === "completed"
+              ).length;
+
+              return (
+                <div
+                  key={unit.id}
+                  onClick={() => setSelectedUnit(unit.id)}
+                  className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-md transition-all cursor-pointer"
+                >
+                  <h4 className="font-bold text-gray-800 mb-2">{unit.name}</h4>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">
+                      {unit.lessons.length} lessons
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {completedLessons}/{unit.lessons.length} completed
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        // Lesson Selection
+        <div>
+          <button
+            onClick={() => setSelectedUnit(null)}
+            className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
+          >
+            <ArrowLeft size={16} className="mr-1" />
+            Back to Units
+          </button>
+          <div className="grid grid-cols-1 gap-3">
+            {currentUnit.lessons.map((lesson, index) => {
+              const status = getLessonProgress(lesson);
+              const isClickable = lesson.hasContent;
+
+              return (
+                <div
+                  key={index}
+                  onClick={() => isClickable && onViewLesson(lesson.content)}
+                  className={`p-4 border rounded-lg transition-all ${
+                    isClickable
+                      ? "cursor-pointer hover:shadow-md"
+                      : "cursor-not-allowed opacity-75"
+                  } ${getProgressColor(status)}`}
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h5 className="font-medium">{lesson.name}</h5>
+                      {lesson.content && (
+                        <p className="text-sm mt-1 opacity-75">
+                          {lesson.content.description}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {status === "completed" && <CheckCircle size={16} />}
+                      {status === "started" && <Clock size={16} />}
+                      {status === "unavailable" && (
+                        <span className="text-xs px-2 py-1 bg-gray-200 rounded">
+                          Coming Soon
+                        </span>
+                      )}
+                      {isClickable && <ArrowRight size={16} />}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Enhanced UserLessonsPage with seamless view toggle
 const UserLessonsPage = () => {
   const [lessons, setLessons] = useState([]);
   const [userProgress, setUserProgress] = useState({});
@@ -1344,13 +2383,24 @@ const UserLessonsPage = () => {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [filterLevel, setFilterLevel] = useState("all");
   const [filterModule, setFilterModule] = useState("all");
+  const [isUserView, setIsUserView] = useState(true);
   const [userStats, setUserStats] = useState({
     totalXP: 0,
     streak: 0,
     completedLessons: 0,
   });
-
   const [user, setUser] = useState(null);
+
+  // Seamless view toggle
+  const handleViewToggle = () => {
+    setIsUserView(!isUserView);
+    showToast(
+      isUserView
+        ? "Switched to Volunteer Dashboard"
+        : "Switched to Student View",
+      "success"
+    );
+  };
 
   // Auth state listener
   useEffect(() => {
@@ -1468,6 +2518,8 @@ const UserLessonsPage = () => {
     setShowStatsModal,
     showProfileModal,
     setShowProfileModal,
+    isUserView,
+    handleViewToggle,
   };
 
   if (loading) {
@@ -1502,74 +2554,89 @@ const UserLessonsPage = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
         <Navigation />
 
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <XPStreakDisplay />
+        {/* Conditional rendering based on view */}
+        {isUserView ? (
+          // Student View
+          <div className="max-w-7xl mx-auto px-4 py-8">
+            <XPStreakDisplay />
 
-          <ContinueLearningButton
-            lessons={lessons}
-            userProgress={userProgress}
-            onViewLesson={handleViewLesson}
-          />
+            <ContinueLearningButton
+              lessons={lessons}
+              userProgress={userProgress}
+              onViewLesson={handleViewLesson}
+            />
 
-          {/* Enhanced Filter Controls */}
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">All Lessons</h2>
-            <div className="flex space-x-4">
-              <select
-                value={filterLevel}
-                onChange={(e) => {
-                  setFilterLevel(e.target.value);
-                  setFilterModule("all");
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
-              >
-                <option value="all">All Levels</option>
-                <option value="A0">A0 - Absolute Beginner</option>
-                <option value="A1">A1 - Beginner</option>
-                <option value="A2">A2 - Elementary</option>
-              </select>
+            <CurriculumBrowser
+              lessons={lessons}
+              userProgress={userProgress}
+              onViewLesson={handleViewLesson}
+            />
 
-              <select
-                value={filterModule}
-                onChange={(e) => setFilterModule(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
-                disabled={availableModules.length === 0}
-              >
-                <option value="all">All Modules</option>
-                {availableModules.map((module) => (
-                  <option key={module.id} value={module.id}>
-                    {module.name}
-                  </option>
-                ))}
-              </select>
+            {/* Enhanced Filter Controls */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+                All Lessons ({filteredLessons.length})
+              </h2>
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+                <select
+                  value={filterLevel}
+                  onChange={(e) => {
+                    setFilterLevel(e.target.value);
+                    setFilterModule("all");
+                  }}
+                  className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="all">All Levels</option>
+                  <option value="A0">A0 - Absolute Beginner</option>
+                  <option value="A1">A1 - Beginner</option>
+                  <option value="A2">A2 - Elementary</option>
+                </select>
+
+                <select
+                  value={filterModule}
+                  onChange={(e) => setFilterModule(e.target.value)}
+                  className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                  disabled={availableModules.length === 0}
+                >
+                  <option value="all">All Modules</option>
+                  {availableModules.map((module) => (
+                    <option key={module.id} value={module.id}>
+                      {module.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
 
-          {/* Lessons Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredLessons.map((lesson) => (
-              <LessonCard
-                key={lesson.id}
-                lesson={lesson}
-                progress={userProgress[lesson.id]}
-                onViewLesson={handleViewLesson}
-              />
-            ))}
-          </div>
-
-          {filteredLessons.length === 0 && (
-            <div className="text-center py-12">
-              <BookOpen size={48} className="mx-auto text-gray-400 mb-4" />
-              <h3 className="text-xl font-medium text-gray-600 mb-2">
-                No lessons found
-              </h3>
-              <p className="text-gray-500">
-                Try adjusting your filter settings or check back later for new
-                content.
-              </p>
+            {/* Lessons Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+              {filteredLessons.map((lesson) => (
+                <LessonCard
+                  key={lesson.id}
+                  lesson={lesson}
+                  progress={userProgress[lesson.id]}
+                  onViewLesson={handleViewLesson}
+                />
+              ))}
             </div>
-          )}
-        </div>
+
+            {filteredLessons.length === 0 && (
+              <div className="text-center py-12">
+                <BookOpen size={48} className="mx-auto text-gray-400 mb-4" />
+                <h3 className="text-xl font-medium text-gray-600 mb-2">
+                  No lessons found
+                </h3>
+                <p className="text-gray-500">
+                  Try adjusting your filter settings or check back later for new
+                  content.
+                </p>
+              </div>
+            )}
+          </div>
+        ) : (
+          // Redirect to your existing volunteer dashboard
+          (window.location.href = "/volunteerDashboard")
+        )}
 
         <LessonViewer
           lesson={selectedLesson}
