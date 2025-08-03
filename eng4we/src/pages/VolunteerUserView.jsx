@@ -67,7 +67,7 @@ export const subscribeToLessons = (callback) => {
     (error) => {
       console.error("Error fetching lessons:", error);
       callback([]);
-    },
+    }
   );
 
   return unsubscribe;
@@ -91,7 +91,7 @@ export const subscribeToUserProgress = (uid, callback) => {
     (error) => {
       console.error("Error fetching user progress:", error);
       callback({});
-    },
+    }
   );
 
   return unsubscribe;
@@ -115,7 +115,7 @@ export const subscribeToUserProfile = (uid, callback) => {
     (error) => {
       console.error("Error fetching user profile:", error);
       callback(null);
-    },
+    }
   );
 
   return unsubscribe;
@@ -134,7 +134,7 @@ export const updateProgress = async (uid, lessonId, progressData) => {
         ...progressData,
         updatedAt: new Date(),
       },
-      { merge: true },
+      { merge: true }
     );
   } catch (error) {
     console.error("Error updating progress:", error);
@@ -203,7 +203,7 @@ export const subscribeToUserStats = (userId, callback) => {
   // We'll compute stats from progress data instead of storing separately
   return subscribeToUserProgress(userId, (progressData) => {
     const completedLessons = Object.values(progressData).filter(
-      (p) => p && p.completed,
+      (p) => p && p.completed
     ).length;
 
     const totalXP = Object.values(progressData)
@@ -505,6 +505,11 @@ const Navigation = () => {
     }
   };
 
+  const handleViewToggle = () => {
+    // Redirect back to volunteer dashboard
+    window.location.href = "/VolunteerDashboard";
+  };
+
   return (
     <nav className="bg-white shadow-lg border-b border-blue-100">
       <div className="max-w-7xl mx-auto px-4">
@@ -549,47 +554,64 @@ const Navigation = () => {
             </a>
           </div>
 
-          {/* User Menu */}
-          <div className="relative">
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 transition-colors"
-            >
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                {userProfile?.displayName?.charAt(0) ||
-                  user?.displayName?.charAt(0) ||
-                  user?.email?.charAt(0) ||
-                  "U"}
-              </div>
-              <span className="hidden md:block">
-                {userProfile?.displayName ||
-                  user?.displayName ||
-                  user?.email ||
-                  "User"}
+          {/* View Toggle and User Menu Container */}
+          <div className="flex items-center space-x-4">
+            {/* View Toggle Switch */}
+            <div className="flex items-center space-x-3 bg-gray-50 rounded-lg p-3">
+              <span className="text-sm text-gray-600 whitespace-nowrap">
+                User View
               </span>
-            </button>
+              <button
+                onClick={handleViewToggle}
+                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 bg-blue-600"
+                title="Switch to Volunteer Dashboard"
+              >
+                <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-6" />
+              </button>
+            </div>
 
-            {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10">
-                <button
-                  onClick={() => {
-                    setShowProfileModal(true);
-                    setShowUserMenu(false);
-                  }}
-                  className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-blue-50 transition-colors"
-                >
-                  <User size={16} className="inline mr-2" />
-                  Edit Profile
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
-                >
-                  <LogOut size={16} className="inline mr-2" />
-                  Logout
-                </button>
-              </div>
-            )}
+            {/* User Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 transition-colors"
+              >
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                  {userProfile?.displayName?.charAt(0) ||
+                    user?.displayName?.charAt(0) ||
+                    user?.email?.charAt(0) ||
+                    "U"}
+                </div>
+                <span className="hidden md:block">
+                  {userProfile?.displayName ||
+                    user?.displayName ||
+                    user?.email ||
+                    "User"}
+                </span>
+              </button>
+
+              {showUserMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10">
+                  <button
+                    onClick={() => {
+                      setShowProfileModal(true);
+                      setShowUserMenu(false);
+                    }}
+                    className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-blue-50 transition-colors"
+                  >
+                    <User size={16} className="inline mr-2" />
+                    Edit Profile
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <LogOut size={16} className="inline mr-2" />
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -856,8 +878,8 @@ const FlashcardViewer = ({ flashcards, onComplete }) => {
                 index === currentIndex
                   ? "bg-blue-500"
                   : completedCards.has(index)
-                    ? "bg-green-500"
-                    : "bg-gray-300"
+                  ? "bg-green-500"
+                  : "bg-gray-300"
               }`}
             />
           ))}
@@ -1130,8 +1152,8 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
                 lesson.level === "A0"
                   ? "bg-red-100 text-red-800"
                   : lesson.level === "A1"
-                    ? "bg-yellow-100 text-yellow-800"
-                    : "bg-green-100 text-green-800"
+                  ? "bg-yellow-100 text-yellow-800"
+                  : "bg-green-100 text-green-800"
               }`}
             >
               {lesson.level}
@@ -1204,8 +1226,8 @@ const LessonCard = ({ lesson, progress, onViewLesson }) => {
             lesson.level === "A0"
               ? "bg-red-100 text-red-800"
               : lesson.level === "A1"
-                ? "bg-yellow-100 text-yellow-800"
-                : "bg-green-100 text-green-800"
+              ? "bg-yellow-100 text-yellow-800"
+              : "bg-green-100 text-green-800"
           }`}
         >
           {lesson.level}
@@ -1273,7 +1295,7 @@ const LessonCard = ({ lesson, progress, onViewLesson }) => {
 // Continue Learning Button Component
 const ContinueLearningButton = ({ lessons, userProgress, onViewLesson }) => {
   const nextLesson = lessons.find(
-    (lesson) => !userProgress[lesson.id]?.completed,
+    (lesson) => !userProgress[lesson.id]?.completed
   );
 
   if (!nextLesson) {
@@ -1360,14 +1382,14 @@ const UserLessonsPage = () => {
       user.uid,
       (progressData) => {
         setUserProgress(progressData || {});
-      },
+      }
     );
 
     const unsubscribeProfile = subscribeToUserProfile(
       user.uid,
       (profileData) => {
         setUserProfile(profileData);
-      },
+      }
     );
 
     const unsubscribeStats = subscribeToUserStats(user.uid, (statsData) => {

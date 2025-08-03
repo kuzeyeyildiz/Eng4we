@@ -7,6 +7,7 @@ import Signup from "../pages/Signup";
 import Dashboard from "../pages/Dashboard";
 import Streaks from "../pages/Streaks";
 import VolunteerDashboard from "../pages/VolunteerDashboard";
+import VolunteerUserView from "../pages/VolunteerUserView";
 import { useAuthRole } from "../context/AuthRoleContext";
 
 // Shared loading component
@@ -37,7 +38,7 @@ const RoleBasedRedirect = () => {
     "Role:",
     role,
     "Loading:",
-    loading,
+    loading
   );
 
   if (loading) return <LoadingScreen />;
@@ -88,6 +89,14 @@ const AppRouter = () => {
         element={
           <PrivateRoute>
             <VolunteerDashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/volunteerUserView"
+        element={
+          <PrivateRoute>
+            <VolunteerUserView />
           </PrivateRoute>
         }
       />
