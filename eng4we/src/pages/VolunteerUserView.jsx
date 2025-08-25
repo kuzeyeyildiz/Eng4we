@@ -646,7 +646,7 @@ const useAppContext = () => {
 };
 
 // Profile Edit Modal Component
-const ProfileEditModal = ({ isOpen, onClose, userProfile, onSave }) => {
+const ProfileEditModal = ({ isOpen, onClose, volunteer, onSave }) => {
   const [formData, setFormData] = useState({
     displayName: "",
     bio: "",
@@ -671,18 +671,18 @@ const ProfileEditModal = ({ isOpen, onClose, userProfile, onSave }) => {
   };
 
   useEffect(() => {
-    if (userProfile) {
+    if (volunteer) {
       setFormData({
-        displayName: userProfile.displayName || "",
-        bio: userProfile.bio || "",
-        location: userProfile.location || "",
-        language: userProfile.language || "English",
-        photoURL: userProfile.photoURL || "",
-        name: userProfile.name || userProfile.displayName || "", // Added
-        avatar: userProfile.avatar || userProfile.photoURL || "", // Added
+        displayName: volunteer.displayName || "",
+        bio: volunteer.bio || "",
+        location: volunteer.location || "",
+        language: volunteer.language || "English",
+        photoURL: volunteer.photoURL || "",
+        name: volunteer.name || volunteer.displayName || "",
+        avatar: volunteer.avatar || volunteer.photoURL || "",
       });
     }
-  }, [userProfile]);
+  }, [volunteer]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -727,12 +727,12 @@ const ProfileEditModal = ({ isOpen, onClose, userProfile, onSave }) => {
               <div className="relative inline-block">
                 <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
                   {formData.avatar ||
-                  userProfile?.photoURL ||
+                  volunteer?.photoURL ||
                   formData.photoURL ? (
                     <img
                       src={
                         formData.avatar ||
-                        userProfile.photoURL ||
+                        volunteer.photoURL ||
                         formData.photoURL
                       }
                       alt="Profile"
@@ -740,7 +740,7 @@ const ProfileEditModal = ({ isOpen, onClose, userProfile, onSave }) => {
                     />
                   ) : (
                     (formData.name || formData.displayName)?.charAt(0) ||
-                    userProfile?.email?.charAt(0) ||
+                    volunteer?.email?.charAt(0) ||
                     "U"
                   )}
                 </div>
@@ -820,115 +820,157 @@ const ProfileEditModal = ({ isOpen, onClose, userProfile, onSave }) => {
   );
 };
 
-// Navigation Component
-const Navigation = () => {
-  const { user, userProfile, setShowProfileModal } = useAppContext();
-  const [showUserMenu, setShowUserMenu] = useState(false);
+const ProfileModal = ({ isOpen, onClose, volunteer, onSave }) => {
+  return (
+    <ProfileEditModal
+      isOpen={isOpen}
+      onClose={onClose}
+      volunteer={volunteer}
+      onSave={onSave}
+    />
+  );
+};
+
+// Volunteer Profile Component (from your first file)
+const VolunteerProfile = () => {
+  const { volunteer, setVolunteer, showToast, isUserView, setIsUserView } =
+    useAppContext();
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
+  const handleProfileSave = async (updatedData) => {
+    try {
+      if (volunteer?.id) {
+        // Update profile in Firestore
+        await setDoc(
+          doc(db, "volunteers", volunteer.id),
+          {
+            ...volunteer,
+            ...updatedData,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+      }
+
+      setVolunteer({ ...volunteer, ...updatedData });
+      showToast("Profile updated successfully!", "success");
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      showToast("Error updating profile. Please try again.", "error");
+    }
+  };
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      console.log("User logged out");
+      showToast("Logged out successfully!", "success");
     } catch (error) {
       console.error("Logout error:", error);
+      showToast("Error logging out", "error");
     }
   };
 
-  return (
-    <nav className="bg-white shadow-lg border-b border-blue-100">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-              <BookOpen size={20} className="text-white" />
+  const handleViewToggle = () => {
+    if (isUserView) {
+      setIsUserView(false);
+      showToast("Switched to Volunteer Dashboard", "success");
+    } else {
+      // Redirect to user view
+      window.location.href = "/volunteerUserView";
+    }
+  };
+
+  if (!volunteer) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="animate-pulse">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-300 rounded-full"></div>
+            <div className="flex-1">
+              <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-gray-300 rounded w-1/2"></div>
             </div>
-            <h1 className="text-xl font-bold text-gray-800">English4We</h1>
-          </div>
-
-          {/* Navigation Links */}
-          <div className="hidden lg:flex items-center space-x-6">
-            <a
-              href="#"
-              className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors"
-            >
-              <Home size={18} />
-              <span>Home</span>
-            </a>
-            <a
-              href="#"
-              className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors"
-            >
-              <BarChart3 size={18} />
-              <span>Dashboard</span>
-            </a>
-            <a
-              href="#"
-              className="flex items-center space-x-2 text-blue-600 font-medium"
-            >
-              <BookOpen size={18} />
-              <span>Lessons</span>
-            </a>
-            <a
-              href="#"
-              className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors"
-            >
-              <Flame size={18} />
-              <span>Streaks</span>
-            </a>
-          </div>
-
-          {/* User Menu */}
-          <div className="relative">
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 transition-colors"
-            >
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                {userProfile?.displayName?.charAt(0) ||
-                  user?.displayName?.charAt(0) ||
-                  user?.email?.charAt(0) ||
-                  "U"}
-              </div>
-              <span className="hidden md:block">
-                {userProfile?.displayName ||
-                  user?.displayName ||
-                  user?.email ||
-                  "User"}
-              </span>
-            </button>
-
-            {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10">
-                <button
-                  onClick={() => {
-                    setShowProfileModal(true);
-                    setShowUserMenu(false);
-                  }}
-                  className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-blue-50 transition-colors"
-                >
-                  <User size={16} className="inline mr-2" />
-                  Edit Profile
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
-                >
-                  <LogOut size={16} className="inline mr-2" />
-                  Logout
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>
-    </nav>
+    );
+  }
+
+  return (
+    <>
+      <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+          <div className="relative">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-lg sm:text-xl font-bold shadow-lg">
+              {volunteer.avatar ? (
+                <img
+                  src={volunteer.avatar}
+                  alt="Avatar"
+                  className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover"
+                />
+              ) : (
+                volunteer.name?.charAt(0)?.toUpperCase() || "V"
+              )}
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 truncate">
+              {volunteer.name || "Loading..."}
+            </h2>
+            <p className="text-sm sm:text-base text-gray-600">Volunteer</p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+            {/* View Toggle Switch */}
+            <div className="flex items-center space-x-3 bg-gray-50 rounded-lg p-3 w-full sm:w-auto">
+              <span className="text-sm text-gray-600 whitespace-nowrap">
+                User View
+              </span>
+              <button
+                onClick={handleViewToggle}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  isUserView ? "bg-blue-600" : "bg-gray-300"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    isUserView ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setShowProfileModal(true)}
+                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                title="Edit Profile"
+              >
+                <Edit3 size={18} />
+              </button>
+              <button
+                onClick={handleLogout}
+                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                title="Logout"
+              >
+                <LogOut size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        volunteer={volunteer}
+        onSave={handleProfileSave}
+      />
+    </>
   );
 };
 
 // XP and Streak Display Component
 const XPStreakDisplay = () => {
-  const { userStats, showStatsModal, setShowStatsModal, userProfile } =
+  const { userStats, showStatsModal, setShowStatsModal, volunteer } =
     useAppContext();
 
   const currentLevel = Math.floor(userStats.totalXP / 100) + 1;
@@ -941,7 +983,8 @@ const XPStreakDisplay = () => {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold mb-2">
-              Welcome back, {userProfile?.displayName || "Learner"}!
+              Welcome back,{" "}
+              {volunteer?.name || volunteer?.displayName || "Learner"}!
             </h2>
             <p className="text-blue-100">
               You're doing great! Continue your streak.
@@ -1045,28 +1088,28 @@ const XPStreakDisplay = () => {
               </div>
 
               {/* Profile Info in Stats */}
-              {userProfile && (
+              {volunteer && (
                 <>
-                  {userProfile.location && (
+                  {volunteer.location && (
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <MapPin className="text-gray-500" size={24} />
                         <span className="font-medium">Location</span>
                       </div>
                       <span className="text-sm text-gray-600">
-                        {userProfile.location}
+                        {volunteer.location}
                       </span>
                     </div>
                   )}
 
-                  {userProfile.language && (
+                  {volunteer.language && (
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <Globe className="text-gray-500" size={24} />
                         <span className="font-medium">Native Language</span>
                       </div>
                       <span className="text-sm text-gray-600">
-                        {userProfile.language}
+                        {volunteer.language}
                       </span>
                     </div>
                   )}
@@ -2375,7 +2418,7 @@ const CurriculumBrowser = ({ lessons, userProgress, onViewLesson }) => {
 const UserLessonsPage = () => {
   const [lessons, setLessons] = useState([]);
   const [userProgress, setUserProgress] = useState({});
-  const [userProfile, setUserProfile] = useState(null);
+  const [volunteer, setVolunteer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [showLessonViewer, setShowLessonViewer] = useState(false);
@@ -2390,14 +2433,18 @@ const UserLessonsPage = () => {
     completedLessons: 0,
   });
   const [user, setUser] = useState(null);
+  const showToast = (message, type = "info") => {
+    console.log(`Toast: ${message} (${type})`);
+    // In a real app, you'd implement a proper toast system
+    // For now, you could also use alert for immediate feedback:
+    alert(message);
+  };
 
-  // Seamless view toggle
   const handleViewToggle = () => {
-    setIsUserView(!isUserView);
+    const newView = !isUserView;
+    setIsUserView(newView);
     showToast(
-      isUserView
-        ? "Switched to Volunteer Dashboard"
-        : "Switched to Student View",
+      newView ? "Switched to Student View" : "Switched to Volunteer Dashboard",
       "success"
     );
   };
@@ -2438,7 +2485,7 @@ const UserLessonsPage = () => {
     const unsubscribeProfile = subscribeToUserProfile(
       user.uid,
       (profileData) => {
-        setUserProfile(profileData);
+        setVolunteer(profileData);
       }
     );
 
@@ -2485,6 +2532,7 @@ const UserLessonsPage = () => {
   const handleProfileSave = async (profileData) => {
     if (user) {
       await updateUserProfile(user.uid, profileData);
+      setVolunteer({ ...volunteer, ...profileData });
     }
   };
 
@@ -2512,14 +2560,15 @@ const UserLessonsPage = () => {
 
   const contextValue = {
     user,
-    userProfile,
+    volunteer,
+    setVolunteer,
     userStats,
     showStatsModal,
     setShowStatsModal,
     showProfileModal,
     setShowProfileModal,
     isUserView,
-    handleViewToggle,
+    setIsUserView,
   };
 
   if (loading) {
@@ -2552,7 +2601,7 @@ const UserLessonsPage = () => {
   return (
     <AppContext.Provider value={contextValue}>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
-        <Navigation />
+        <VolunteerProfile />
 
         {/* Conditional rendering based on view */}
         {isUserView ? (
@@ -2648,7 +2697,7 @@ const UserLessonsPage = () => {
         <ProfileEditModal
           isOpen={showProfileModal}
           onClose={() => setShowProfileModal(false)}
-          userProfile={userProfile}
+          volunteer={volunteer}
           onSave={handleProfileSave}
         />
       </div>

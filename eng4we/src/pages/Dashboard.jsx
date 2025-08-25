@@ -1575,7 +1575,7 @@ const getEmbeddableUrl = (originalUrl, contentType) => {
   return originalUrl;
 };
 
-// Lesson Viewer Modal Component - DYNAMIC VIDEO SIZING
+// Lesson Viewer Modal Component - FIXED QUIZLET INTEGRATION
 const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
   // ALL HOOKS MUST BE CALLED FIRST, BEFORE ANY CONDITIONAL RETURNS
   const [activeTab, setActiveTab] = useState("video");
@@ -1583,6 +1583,93 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
   const [availableHeight, setAvailableHeight] = useState(0);
   const { user } = useAppContext();
   const contentRef = React.useRef(null);
+
+  // FIXED: Enhanced getEmbeddableUrl function with proper Quizlet support
+  const getEmbeddableUrl = (url, contentType) => {
+    if (!url) return "";
+
+    // Google Drive: Convert to preview/embed URL
+    if (url.includes("drive.google.com")) {
+      const fileId = url.match(/\/d\/([a-zA-Z0-9-_]+)/)?.[1];
+      return fileId ? `https://drive.google.com/file/d/${fileId}/preview` : url;
+    }
+
+    // YouTube: Convert to embed URL
+    if (url.includes("youtube.com/watch?v=")) {
+      const videoId = url.split("v=")[1]?.split("&")[0];
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+    }
+
+    if (url.includes("youtu.be/")) {
+      const videoId = url.split("youtu.be/")[1]?.split("?")[0];
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+    }
+
+    // FIXED: Quizlet URL handling with clean interface parameters
+    if (url.includes("quizlet.com")) {
+      // If already in embed format, ensure it has clean parameters
+      if (url.includes("/embed")) {
+        const baseUrl = url.split("?")[0];
+        return `${baseUrl}?i=3s8ygu&x=1jqt&hideLogin=true&hideCreate=true&showWelcome=false&showInfo=false&hideButtons=true&showLogo=false`;
+      }
+
+      // Extract set ID from various Quizlet URL formats
+      const setIdMatch = url.match(/quizlet\.com\/([^\/\?]+\/)?(\d+)/);
+      const directSetIdMatch = url.match(/quizlet\.com\/(\d+)/);
+
+      let setId;
+      if (setIdMatch) {
+        setId = setIdMatch[2]; // Format: quizlet.com/us/123456
+      } else if (directSetIdMatch) {
+        setId = directSetIdMatch[1]; // Format: quizlet.com/123456
+      }
+
+      if (setId) {
+        // Determine activity type from URL
+        let activityType = "flashcards"; // default
+
+        if (url.includes("/match")) {
+          activityType = "match";
+        } else if (url.includes("/learn")) {
+          activityType = "learn";
+        } else if (url.includes("/test")) {
+          activityType = "test";
+        } else if (url.includes("/spell")) {
+          activityType = "spell";
+        } else if (url.includes("/gravity")) {
+          activityType = "gravity";
+        }
+
+        // Generate clean embed URL
+        return `https://quizlet.com/${setId}/${activityType}/embed?i=3s8ygu&x=1jqt&hideLogin=true&hideCreate=true&showWelcome=false&showInfo=false&hideButtons=true&showLogo=false`;
+      }
+    }
+
+    // Dropbox: Add ?raw=1 for direct access
+    if (url.includes("dropbox.com")) {
+      return url.replace("?dl=0", "?raw=1").replace("?dl=1", "?raw=1");
+    }
+
+    return url; // Return as-is for other URLs
+  };
+
+  // FIXED: Function to get optimal height for different content types
+  const getOptimalHeight = (url, contentType) => {
+    if (url?.includes("quizlet.com")) {
+      if (url.includes("/flashcards")) return "800px";
+      if (url.includes("/match")) return "650px";
+      if (url.includes("/learn")) return "700px";
+      if (url.includes("/test")) return "750px";
+      if (url.includes("/spell")) return "600px";
+      if (url.includes("/gravity")) return "650px";
+      return "800px"; // Default for flashcards
+    }
+
+    if (contentType === "video") return "315px";
+    if (url?.includes("drive.google.com")) return "600px";
+
+    return "500px";
+  };
 
   // useEffect for calculating available height
   useEffect(() => {
@@ -1618,18 +1705,25 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
         (lesson.url &&
           (lesson.contentType === "audio" || lesson.type?.includes("audio")));
 
+      // FIXED: Detect Quizlet content as interactive/quiz
+      const hasQuizlet = lesson.url?.includes("quizlet.com");
+      const hasQuiz =
+        lesson.contentType === "quiz" || lesson.type === "quiz" || hasQuizlet;
+
       const hasDocument =
         lesson.documentUrl ||
         (lesson.url &&
           (lesson.contentType === "document" ||
             lesson.type?.includes("document") ||
-            (!hasVideo && !hasAudio))); // Default to document if no other type
+            (!hasVideo && !hasAudio && !hasQuiz))); // Default to document if no other type
 
       const hasFlashcards = lesson.flashcards && lesson.flashcards.length > 0;
 
-      // Set default active tab based on priority: video > audio > flashcards > document
+      // Set default active tab based on priority: video > quiz > audio > flashcards > document
       if (hasVideo) {
         setActiveTab("video");
+      } else if (hasQuiz || hasQuizlet) {
+        setActiveTab("quiz");
       } else if (hasAudio) {
         setActiveTab("audio");
       } else if (hasFlashcards) {
@@ -1637,7 +1731,6 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
       } else if (hasDocument) {
         setActiveTab("document");
       } else {
-        // Fallback - try to detect from URL or show document tab
         setActiveTab("document");
       }
     }
@@ -1723,7 +1816,7 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
           </button>
         </div>
 
-        {/* Content Tabs with Enhanced Detection */}
+        {/* FIXED: Content Tabs with Quizlet Detection */}
         <div className="flex border-b border-gray-200 overflow-x-auto scrollbar-hide flex-shrink-0">
           <div className="flex min-w-full">
             {(() => {
@@ -1751,6 +1844,30 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
                   >
                     <Video size={20} />
                     <span>Video</span>
+                  </button>
+                );
+              }
+
+              // FIXED: Quiz/Quizlet tab
+              const hasQuizlet = lesson.url?.includes("quizlet.com");
+              const hasQuiz =
+                lesson.contentType === "quiz" ||
+                lesson.type === "quiz" ||
+                hasQuizlet;
+
+              if (hasQuiz || hasQuizlet) {
+                tabs.push(
+                  <button
+                    key="quiz"
+                    onClick={() => setActiveTab("quiz")}
+                    className={`px-6 py-3 flex items-center space-x-2 transition-colors whitespace-nowrap ${
+                      activeTab === "quiz"
+                        ? "border-b-2 border-purple-500 text-purple-600"
+                        : "text-gray-600 hover:text-purple-600"
+                    }`}
+                  >
+                    <BookOpen size={20} />
+                    <span>{hasQuizlet ? "Quizlet" : "Quiz"}</span>
                   </button>
                 );
               }
@@ -1803,9 +1920,9 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
                 lesson.url ||
                 lesson.contentType === "document" ||
                 lesson.type?.includes("document") ||
-                (!hasVideo && !hasAudio); // Show if no other content
+                (!hasVideo && !hasAudio && !hasQuiz); // Show if no other content
 
-              if (hasDocument) {
+              if (hasDocument && !hasQuiz && !hasQuizlet) {
                 tabs.push(
                   <button
                     key="document"
@@ -1890,6 +2007,53 @@ const LessonViewer = ({ lesson, isOpen, onClose, onComplete }) => {
 
           {activeTab !== "video" && (
             <div className="p-4 lg:p-6 xl:p-8">
+              {/* FIXED: Quizlet/Quiz Content Rendering */}
+              {activeTab === "quiz" && lesson.url && (
+                <div className="space-y-4">
+                  <div className="bg-purple-50 rounded-xl p-4 lg:p-6">
+                    {lesson.url.includes("quizlet.com") && (
+                      <div className="flex items-center space-x-2 mb-4">
+                        <div className="w-8 h-8 bg-purple-500 rounded flex items-center justify-center">
+                          <span className="text-white text-sm font-bold">
+                            Q
+                          </span>
+                        </div>
+                        <h4 className="text-lg font-medium text-purple-800">
+                          {lesson.title} - Interactive Quizlet
+                        </h4>
+                      </div>
+                    )}
+                    <div className="mb-4">
+                      <iframe
+                        src={getEmbeddableUrl(lesson.url, lesson.contentType)}
+                        className="w-full rounded-lg border-0"
+                        style={{
+                          height: getOptimalHeight(
+                            lesson.url,
+                            lesson.contentType
+                          ),
+                          minHeight: "600px",
+                        }}
+                        title={lesson.title}
+                        allow="fullscreen"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center mt-4">
+                      <a
+                        href={lesson.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+                      >
+                        <ExternalLink size={20} className="mr-2" />
+                        Open in New Tab
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {activeTab === "audio" && lesson.audioUrl && (
                 <div className="max-w-2xl mx-auto">
                   <AudioPlayer

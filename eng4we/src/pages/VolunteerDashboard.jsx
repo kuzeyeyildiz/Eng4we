@@ -451,6 +451,143 @@ const ProfileModal = ({ isOpen, onClose, volunteer, onSave }) => {
   );
 };
 
+// Volunteer Profile Component
+const VolunteerProfile = () => {
+  const { volunteer, setVolunteer, showToast, isUserView, setIsUserView } =
+    useAppContext();
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
+  const handleProfileSave = async (updatedData) => {
+    try {
+      if (volunteer?.id) {
+        // Update profile in Firestore
+        await setDoc(
+          doc(db, "volunteers", volunteer.id),
+          {
+            ...volunteer,
+            ...updatedData,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+      }
+
+      setVolunteer({ ...volunteer, ...updatedData });
+      showToast("Profile updated successfully!", "success");
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      showToast("Error updating profile. Please try again.", "error");
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      showToast("Logged out successfully!", "success");
+    } catch (error) {
+      console.error("Logout error:", error);
+      showToast("Error logging out", "error");
+    }
+  };
+
+  const handleViewToggle = () => {
+    if (isUserView) {
+      setIsUserView(false);
+      showToast("Switched to Volunteer Dashboard", "success");
+    } else {
+      // Redirect to user view
+      window.location.href = "/volunteerUserView";
+    }
+  };
+
+  if (!volunteer) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="animate-pulse">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-300 rounded-full"></div>
+            <div className="flex-1">
+              <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-gray-300 rounded w-1/2"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+          <div className="relative">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-lg sm:text-xl font-bold shadow-lg">
+              {volunteer.avatar ? (
+                <img
+                  src={volunteer.avatar}
+                  alt="Avatar"
+                  className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover"
+                />
+              ) : (
+                volunteer.name?.charAt(0)?.toUpperCase() || "V"
+              )}
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 truncate">
+              {volunteer.name || "Loading..."}
+            </h2>
+            <p className="text-sm sm:text-base text-gray-600">Volunteer</p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+            {/* View Toggle Switch */}
+            <div className="flex items-center space-x-3 bg-gray-50 rounded-lg p-3 w-full sm:w-auto">
+              <span className="text-sm text-gray-600 whitespace-nowrap">
+                User View
+              </span>
+              <button
+                onClick={handleViewToggle}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  isUserView ? "bg-blue-600" : "bg-gray-300"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    isUserView ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setShowProfileModal(true)}
+                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                title="Edit Profile"
+              >
+                <Edit3 size={18} />
+              </button>
+              <button
+                onClick={handleLogout}
+                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                title="Logout"
+              >
+                <LogOut size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        volunteer={volunteer}
+        onSave={handleProfileSave}
+      />
+    </>
+  );
+};
+
 // Task Modal Component
 const TaskModal = ({ isOpen, onClose, task, onSave, isEditing }) => {
   const [formData, setFormData] = useState({
@@ -609,6 +746,8 @@ const ContentUploadModal = ({ isOpen, onClose, onUpload }) => {
   });
   const [uploading, setUploading] = useState(false);
 
+  const CONTENT_TYPES = ["Document", "Video", "Audio", "Quiz", "Interactive"];
+
   const selectedModule = CURRICULUM_DATA[formData.lessonLevel]?.modules.find(
     (m) => m.id === formData.module
   );
@@ -669,6 +808,48 @@ const ContentUploadModal = ({ isOpen, onClose, onUpload }) => {
       return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
     }
 
+    // Quizlet: Convert to embeddable URL with proper parameters
+    if (url.includes("quizlet.com")) {
+      // Handle different Quizlet URL formats
+
+      if (url.includes("/embed")) {
+        // Already in embed format, but ensure it has the right parameters
+        const baseUrl = url.split("?")[0];
+        return `${baseUrl}?i=3s8ygu&x=1jqt&showWelcome=false&showInfo=false&hideButtons=true&showLogo=false`;
+      }
+
+      // Extract set ID from various Quizlet URL formats
+      const setIdMatch = url.match(/quizlet\.com\/([^\/\?]+)\/(\d+)/);
+      const directSetIdMatch = url.match(/quizlet\.com\/(\d+)/);
+
+      let setId;
+      if (setIdMatch) {
+        setId = setIdMatch[2]; // Format: quizlet.com/us/123456
+      } else if (directSetIdMatch) {
+        setId = directSetIdMatch[1]; // Format: quizlet.com/123456
+      }
+
+      if (setId) {
+        // Determine the activity type from URL
+        let activityType = "flashcards"; // default
+
+        if (url.includes("/match")) {
+          activityType = "match";
+        } else if (url.includes("/learn")) {
+          activityType = "learn";
+        } else if (url.includes("/test")) {
+          activityType = "test";
+        } else if (url.includes("/spell")) {
+          activityType = "spell";
+        } else if (url.includes("/gravity")) {
+          activityType = "gravity";
+        }
+
+        // Generate clean embed URL with parameters to hide unwanted elements
+        return `https://quizlet.com/${setId}/${activityType}/embed?i=3s8ygu&x=1jqt&hideLogin=true&hideCreate=true&showWelcome=false&showInfo=false&hideButtons=true&showLogo=false`;
+      }
+    }
+
     // Dropbox: Add ?raw=1 for direct access
     if (url.includes("dropbox.com")) {
       return url.replace("?dl=0", "?raw=1").replace("?dl=1", "?raw=1");
@@ -677,7 +858,32 @@ const ContentUploadModal = ({ isOpen, onClose, onUpload }) => {
     return url; // Return as-is for other URLs
   };
 
-  // Replace the incomplete handleSubmit function (around line 600-700) with this:
+  // Helper function to get optimal height for different content types
+  const getOptimalHeight = (contentType, activityType, url) => {
+    if (url?.includes("quizlet.com")) {
+      switch (activityType) {
+        case "flashcards":
+          return "800"; // Increased height for flashcards to show them fully
+        case "match":
+          return "650"; // Match game needs good height for drag & drop
+        case "learn":
+          return "700"; // Learn mode needs space for multiple choice
+        case "test":
+          return "750"; // Test mode needs height for questions
+        case "spell":
+          return "600"; // Spell mode is more compact
+        case "gravity":
+          return "650"; // Gravity game needs space
+        default:
+          return "800"; // Default to taller for unknown Quizlet types
+      }
+    }
+
+    if (contentType === "video") return "315"; // Standard YouTube embed height
+    if (url?.includes("drive.google.com")) return "600"; // Google Drive docs
+
+    return "500"; // Default height
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -760,18 +966,18 @@ const ContentUploadModal = ({ isOpen, onClose, onUpload }) => {
           actualContentType = "video";
         } else if (contentUrl.includes("drive.google.com")) {
           actualContentType = "document";
+        } else if (contentUrl.includes("quizlet.com")) {
+          actualContentType = "quiz";
         }
       }
 
-      // Create the lesson data object - THIS WAS MISSING!
+      // Create the lesson data object
       const selectedModule = CURRICULUM_DATA[
         formData.lessonLevel
       ]?.modules.find((m) => m.id === formData.module);
       const selectedUnit = selectedModule?.units.find(
         (u) => u.id === formData.unit
       );
-
-      // REPLACE the lessonData object creation in ContentUploadModal handleSubmit (around line 700) with this:
 
       const lessonData = {
         id: Date.now().toString(),
@@ -800,12 +1006,54 @@ const ContentUploadModal = ({ isOpen, onClose, onUpload }) => {
         ...(actualContentType === "video" && { videoUrl: contentUrl }),
         ...(actualContentType === "audio" && { audioUrl: contentUrl }),
         ...(actualContentType === "document" && { documentUrl: contentUrl }),
+        ...(actualContentType === "quiz" && { quizUrl: contentUrl }),
+        ...(actualContentType === "interactive" && {
+          interactiveUrl: contentUrl,
+        }),
+
+        // Quizlet-specific metadata
+        ...(contentUrl.includes("quizlet.com") && {
+          platform: "quizlet",
+          isInteractive: true,
+          embedSupported: true,
+          activityType: contentUrl.includes("/match")
+            ? "match"
+            : contentUrl.includes("/learn")
+            ? "learn"
+            : contentUrl.includes("/test")
+            ? "test"
+            : contentUrl.includes("/spell")
+            ? "spell"
+            : contentUrl.includes("/gravity")
+            ? "gravity"
+            : "flashcards",
+          optimalHeight: getOptimalHeight(
+            "quiz",
+            contentUrl.includes("/match")
+              ? "match"
+              : contentUrl.includes("/learn")
+              ? "learn"
+              : contentUrl.includes("/test")
+              ? "test"
+              : contentUrl.includes("/spell")
+              ? "spell"
+              : contentUrl.includes("/gravity")
+              ? "gravity"
+              : "flashcards",
+            contentUrl
+          ),
+          embedParameters:
+            "hideLogin=true&hideCreate=true&showWelcome=false&showInfo=false&hideButtons=true&showLogo=false",
+        }),
 
         // METADATA
         uploaderId: volunteer?.id || "unknown",
         uploaderName: volunteer?.name || "Unknown Volunteer",
         uploadedAt: new Date().toISOString(),
-        xpReward: 10, // Default XP reward
+        xpReward:
+          actualContentType === "quiz" || actualContentType === "interactive"
+            ? 15
+            : 10, // Extra XP for interactive content
 
         // UPLOAD METHOD TRACKING
         ...(formData.file && {
@@ -822,7 +1070,7 @@ const ContentUploadModal = ({ isOpen, onClose, onUpload }) => {
           }),
       };
 
-      // Save to Firestore - THIS WAS ALSO MISSING!
+      // Save to Firestore
       await setDoc(doc(db, "lessons", lessonData.id), lessonData);
 
       // Call the onUpload callback
@@ -1079,18 +1327,43 @@ const ContentUploadModal = ({ isOpen, onClose, onUpload }) => {
                   setFormData({ ...formData, externalUrl: e.target.value })
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="https://drive.google.com/... (recommended)"
+                placeholder="https://quizlet.com/... or drive.google.com/..."
               />
               <p className="text-xs text-green-600 mt-1">
-                ✅ Always works, embeds nicely
+                ✅ Supports YouTube, Google Drive, Quizlet & more!
               </p>
             </div>
           </div>
+
+          {formData.externalUrl &&
+            formData.externalUrl.includes("quizlet.com") && (
+              <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                <div className="flex items-center space-x-2 mb-2">
+                  <div className="w-6 h-6 bg-purple-500 rounded flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">Q</span>
+                  </div>
+                  <span className="text-purple-700 font-medium">
+                    Quizlet Content Detected!
+                  </span>
+                </div>
+                <p className="text-sm text-purple-600 mb-2">
+                  This will be embedded as an interactive Quizlet activity with
+                  clean interface (no login/create buttons).
+                </p>
+                <div className="text-xs text-purple-500">
+                  <strong>Height:</strong> Optimized for full flashcard
+                  visibility
+                  <br />
+                  <strong>Interface:</strong> Clean embed without distractions
+                </div>
+              </div>
+            )}
 
           <p className="text-sm text-gray-600 text-center">
             Provide either a file OR an external URL. External URLs are more
             reliable!
           </p>
+
           <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
             <button
               type="button"
@@ -1386,143 +1659,6 @@ const MessageEditModal = ({ isOpen, onClose, message, onSave }) => {
         </div>
       </div>
     </div>
-  );
-};
-
-// Volunteer Profile Component
-const VolunteerProfile = () => {
-  const { volunteer, setVolunteer, showToast, isUserView, setIsUserView } =
-    useAppContext();
-  const [showProfileModal, setShowProfileModal] = useState(false);
-
-  const handleProfileSave = async (updatedData) => {
-    try {
-      if (volunteer?.id) {
-        // Update profile in Firestore
-        await setDoc(
-          doc(db, "volunteers", volunteer.id),
-          {
-            ...volunteer,
-            ...updatedData,
-            updatedAt: new Date().toISOString(),
-          },
-          { merge: true }
-        );
-      }
-
-      setVolunteer({ ...volunteer, ...updatedData });
-      showToast("Profile updated successfully!", "success");
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      showToast("Error updating profile. Please try again.", "error");
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      showToast("Logged out successfully!", "success");
-    } catch (error) {
-      console.error("Logout error:", error);
-      showToast("Error logging out", "error");
-    }
-  };
-
-  const handleViewToggle = () => {
-    if (isUserView) {
-      setIsUserView(false);
-      showToast("Switched to Volunteer Dashboard", "success");
-    } else {
-      // Redirect to user view
-      window.location.href = "/volunteerUserView";
-    }
-  };
-
-  if (!volunteer) {
-    return (
-      <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
-        <div className="animate-pulse">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-300 rounded-full"></div>
-            <div className="flex-1">
-              <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-gray-300 rounded w-1/2"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
-          <div className="relative">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-lg sm:text-xl font-bold shadow-lg">
-              {volunteer.avatar ? (
-                <img
-                  src={volunteer.avatar}
-                  alt="Avatar"
-                  className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover"
-                />
-              ) : (
-                volunteer.name?.charAt(0)?.toUpperCase() || "V"
-              )}
-            </div>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800 truncate">
-              {volunteer.name || "Loading..."}
-            </h2>
-            <p className="text-sm sm:text-base text-gray-600">Volunteer</p>
-          </div>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
-            {/* View Toggle Switch */}
-            <div className="flex items-center space-x-3 bg-gray-50 rounded-lg p-3 w-full sm:w-auto">
-              <span className="text-sm text-gray-600 whitespace-nowrap">
-                User View
-              </span>
-              <button
-                onClick={handleViewToggle}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                  isUserView ? "bg-blue-600" : "bg-gray-300"
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    isUserView ? "translate-x-6" : "translate-x-1"
-                  }`}
-                />
-              </button>
-            </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => setShowProfileModal(true)}
-                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                title="Edit Profile"
-              >
-                <Edit3 size={18} />
-              </button>
-              <button
-                onClick={handleLogout}
-                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                title="Logout"
-              >
-                <LogOut size={18} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <ProfileModal
-        isOpen={showProfileModal}
-        onClose={() => setShowProfileModal(false)}
-        volunteer={volunteer}
-        onSave={handleProfileSave}
-      />
-    </>
   );
 };
 
