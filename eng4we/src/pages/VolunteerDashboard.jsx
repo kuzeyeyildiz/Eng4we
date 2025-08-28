@@ -2451,7 +2451,7 @@ const ContentUpload = () => {
   );
 };
 
-// Fixed Messaging Component with auto-scroll functionality
+// Fixed Messaging Component with proper scroll containment
 const Messaging = () => {
   const { volunteer, showToast } = useAppContext();
   const [messages, setMessages] = useState([]);
@@ -2461,18 +2461,19 @@ const Messaging = () => {
   const [showEditModal, setShowEditModal] = useState(false);
 
   // Ref for the messages container to enable auto-scroll
-  const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
 
-  // Auto-scroll to bottom function
+  // FIXED: Remove automatic scrolling, only scroll when user sends a message
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
   };
 
-  // Auto-scroll when messages change
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  // REMOVED: No automatic scrolling on new messages
 
   // Fixed useEffect with proper error handling
   useEffect(() => {
@@ -2536,15 +2537,20 @@ const Messaging = () => {
         id: Date.now().toString(),
         text: newMessage.trim(),
         sender: volunteer.name || "Unknown",
-        senderId: volunteer.id, // Ensure this matches request.auth.uid
+        senderId: volunteer.id,
         timestamp: new Date().toISOString(),
         avatar: volunteer.avatar || null,
       };
 
       await setDoc(doc(db, "volunteerMessages", message.id), message);
       setNewMessage("");
-      // Scroll to bottom after sending message
-      setTimeout(scrollToBottom, 100);
+
+      // Smooth scroll with proper timing after state update
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          scrollToBottom();
+        });
+      });
     } catch (error) {
       console.error("Error sending message:", error);
       if (error.code === "permission-denied") {
@@ -2633,9 +2639,11 @@ const Messaging = () => {
           </div>
         )}
 
+        {/* FIXED: Cleaner container without problematic scroll target */}
         <div
           ref={messagesContainerRef}
           className="h-48 sm:h-64 overflow-y-auto border border-gray-200 rounded-lg p-4 mb-4 space-y-3"
+          style={{ scrollBehavior: "smooth" }}
         >
           {messages.length === 0 ? (
             <p className="text-gray-500 text-center">
@@ -2700,8 +2708,6 @@ const Messaging = () => {
               </div>
             ))
           )}
-          {/* Invisible element to scroll to */}
-          <div ref={messagesEndRef} />
         </div>
 
         <form onSubmit={sendMessage} className="flex space-x-3">
