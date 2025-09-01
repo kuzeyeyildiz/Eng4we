@@ -2951,7 +2951,7 @@ const VolunteerDashboardApp = () => {
               Volunteer Dashboard
             </p>
             {/* Add authentication status indicator */}
-            <div className="mt-2 flex items-center justify-center space-x-2">
+            <div className="mt-2 flex items-center justify-center space-x-2 w-screen">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               <span className="text-sm text-gray-600">
                 Connected as {volunteer.name}
@@ -2959,17 +2959,12 @@ const VolunteerDashboardApp = () => {
             </div>
           </header>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-              <VolunteerProfile />
-              <TaskManagement />
-              <ContentUpload />
-            </div>
-
-            <div className="space-y-4 sm:space-y-6">
-              <Resources />
-              <Messaging />
-            </div>
+          <div className="max-w-4xl mx-auto space-y-6">
+            <VolunteerProfile />
+            <TaskManagement />
+            <ContentUpload />
+            <Resources />
+            <Messaging />
           </div>
         </div>
 

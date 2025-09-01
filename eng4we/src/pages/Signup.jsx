@@ -1,7 +1,8 @@
 // src/pages/Signup.jsx
 import React, { useState, useEffect } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../services/firebase";
+import { doc, setDoc } from "firebase/firestore";
+import { auth, db } from "../services/firebase";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuthRole } from "../context/AuthRoleContext";
 
@@ -37,18 +38,25 @@ const Signup = () => {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
-        password,
+        password
       );
 
-      // Store the name for profile creation
-      // You can access the name via: name
-      // You can access the user via: userCredential.user
-      console.log("Signup successful, user created:", userCredential.user.uid);
-      console.log("User name to be used for profile:", name);
+      const newUser = userCredential.user;
+      console.log("User created:", newUser.uid);
 
-      // Don't navigate immediately - let the useEffect handle it
-      // after the role is fetched (which should happen after user creation)
-      console.log("Signup successful, waiting for role...");
+      // Create user profile with default role "user"
+      await setDoc(doc(db, "users", newUser.uid), {
+        name: name,
+        email: email,
+        role: "user", // Default role for all new signups
+        createdAt: new Date().toISOString(),
+        uid: newUser.uid,
+      });
+
+      console.log("User profile created with default role 'user'");
+
+      // The useAuthRole context should pick up the new user and role
+      // The useEffect below will handle navigation once role is available
     } catch (err) {
       console.error("Signup error:", err);
       setError(err.message);
